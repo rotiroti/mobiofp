@@ -4,6 +4,7 @@ fingerprint_feature_extractor
 imutils
 ipykernel
 ipython
+ipyfilechooser
 matplotlib
 numpy
 opencv-python
@@ -12,5 +13,7 @@ rembg
 scikit-learn
 scikit-image
 tensorflow
-typer
 ultralytics
+black
+isort
+nbstripout

@@ -1,4 +1,4 @@
-.PHONY: dev-install dev-uninstall macos-dev-install macos-dev-uninstall clean help
+.PHONY: help dev-install dev-uninstall macos-dev-install macos-dev-uninstall clean format
 
 help:
 	@echo "dev-install - install the package in editable mode"
@@ -20,6 +20,11 @@ dev-uninstall:
 macos-dev-uninstall:
 	pip uninstall -y mobiofp
 	pip uninstall -y tensorflow-metal
+
+format:
+	python -m nbstripout **/*.ipynb
+	python -m black --target-version py39 **/*.py **/*.ipynb
+	python -m isort **/*.py **/*.ipynb
 
 clean:
 	find . -type f -name "*.py[co]" -delete

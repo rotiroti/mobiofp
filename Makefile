@@ -16,10 +16,12 @@ macos-dev-install:
 
 dev-uninstall:
 	pip uninstall -y mobiofp
+	pip uninstall -y -r requirements.txt
 
 macos-dev-uninstall:
 	pip uninstall -y mobiofp
 	pip uninstall -y tensorflow-metal
+	pip uninstall -y -r requirements.txt
 
 format:
 	python -m nbstripout **/*.ipynb

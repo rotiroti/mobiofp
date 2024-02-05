@@ -1,10 +1,7 @@
 import cv2
 import numpy as np
-from rembg import remove
-from tensorflow.keras.layers import (Activation, BatchNormalization, Conv2D,
-                                     Conv2DTranspose, Dropout, Input,
-                                     MaxPooling2D, concatenate)
-from tensorflow.keras.models import Model
+import rembg
+from keras import layers, models
 from ultralytics import YOLO
 
 
@@ -43,32 +40,32 @@ class Segment:
         """
 
         # downsampling
-        input_layer = Input(shape=(256, 256, 3), name="image_input")
+        input_layer = layers.Input(shape=(256, 256, 3), name="image_input")
         conv1 = self._conv_block(input_layer, nfilters=filters)
-        conv1_out = MaxPooling2D(pool_size=(2, 2))(conv1)
+        conv1_out = layers.MaxPooling2D(pool_size=(2, 2))(conv1)
         conv2 = self._conv_block(conv1_out, nfilters=filters * 2)
-        conv2_out = MaxPooling2D(pool_size=(2, 2))(conv2)
+        conv2_out = layers.MaxPooling2D(pool_size=(2, 2))(conv2)
         conv3 = self._conv_block(conv2_out, nfilters=filters * 4)
-        conv3_out = MaxPooling2D(pool_size=(2, 2))(conv3)
+        conv3_out = layers.MaxPooling2D(pool_size=(2, 2))(conv3)
         conv4 = self._conv_block(conv3_out, nfilters=filters * 8)
-        conv4_out = MaxPooling2D(pool_size=(2, 2))(conv4)
-        conv4_out = Dropout(0.5)(conv4_out)
+        conv4_out = layers.MaxPooling2D(pool_size=(2, 2))(conv4)
+        conv4_out = layers.Dropout(0.5)(conv4_out)
         conv5 = self._conv_block(conv4_out, nfilters=filters * 16)
-        conv5 = Dropout(0.5)(conv5)
+        conv5 = layers.Dropout(0.5)(conv5)
 
         # upsampling
         deconv6 = self._deconv_block(conv5, residual=conv4, nfilters=filters * 8)
-        deconv6 = Dropout(0.5)(deconv6)
+        deconv6 = layers.Dropout(0.5)(deconv6)
         deconv7 = self._deconv_block(deconv6, residual=conv3, nfilters=filters * 4)
-        deconv7 = Dropout(0.5)(deconv7)
+        deconv7 = layers.Dropout(0.5)(deconv7)
         deconv8 = self._deconv_block(deconv7, residual=conv2, nfilters=filters * 2)
         deconv9 = self._deconv_block(deconv8, residual=conv1, nfilters=filters)
-        output_layer = Conv2D(filters=1, kernel_size=(1, 1), activation="sigmoid")(
-            deconv9
-        )
+        output_layer = layers.Conv2D(
+            filters=1, kernel_size=(1, 1), activation="sigmoid"
+        )(deconv9)
 
         # using sigmoid activation for binary classification
-        model = Model(inputs=input_layer, outputs=output_layer, name="Unet")
+        model = models.Model(inputs=input_layer, outputs=output_layer, name="Unet")
 
         return model
 
@@ -88,22 +85,22 @@ class Segment:
         Returns:
         tf.Tensor: The output tensor after applying the convolutional block.
         """
-        x = Conv2D(
+        x = layers.Conv2D(
             filters=nfilters,
             kernel_size=(size, size),
             padding=padding,
             kernel_initializer=initializer,
         )(tensor)
-        x = BatchNormalization()(x)
-        x = Activation("relu")(x)
-        x = Conv2D(
+        x = layers.BatchNormalization()(x)
+        x = layers.Activation("relu")(x)
+        x = layers.Conv2D(
             filters=nfilters,
             kernel_size=(size, size),
             padding=padding,
             kernel_initializer=initializer,
         )(x)
-        x = BatchNormalization()(x)
-        x = Activation("relu")(x)
+        x = layers.BatchNormalization()(x)
+        x = layers.Activation("relu")(x)
 
         return x
 
@@ -124,10 +121,10 @@ class Segment:
         Returns:
         tf.Tensor: The output tensor after applying the deconvolutional block.
         """
-        y = Conv2DTranspose(
+        y = layers.Conv2DTranspose(
             nfilters, kernel_size=(size, size), strides=strides, padding=padding
         )(tensor)
-        y = concatenate([y, residual], axis=3)
+        y = layers.concatenate([y, residual], axis=3)
         y = self._conv_block(y, nfilters)
 
         return y
@@ -371,7 +368,7 @@ class Detect:
         roi = self.roi(result, image)
 
         # Use Rembg to remove background
-        mask = remove(roi, only_mask=True)
+        mask = rembg.remove(roi, only_mask=True)
 
         # Post-process mask
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))

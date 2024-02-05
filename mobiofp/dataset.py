@@ -3,20 +3,57 @@ from pathlib import Path
 
 import numpy as np
 import yaml
+from keras.preprocessing.image import img_to_array, load_img
+from keras.utils import Sequence
 from scipy import ndimage
-from tensorflow.keras.preprocessing.image import img_to_array, load_img
-from tensorflow.keras.utils import Sequence
 from ultralytics.utils.downloads import zip_directory
 
 
-class YOLODatasetGenerator:
+class DetectDataset:
+    """
+    A class used to prepare a dataset for object detection.
+
+    This class provides methods to generate a dataset from a directory of images and labels,
+    split the dataset into training and validation sets, create a YAML file for the dataset,
+    and zip the dataset.
+
+    Attributes:
+        images_dir (str): The directory containing the images.
+        labels_dir (str): The directory containing the labels.
+        classes_file (str): The file containing the class names.
+        output_dir (Path): The directory where the output dataset will be saved.
+
+    Methods:
+        generate(train_ratio=0.8): Generate the dataset.
+        create_data_yaml(): Create a YAML file for the dataset.
+        zip_dataset(): Zip the dataset.
+    """
+
     def __init__(self, images_dir, labels_dir, classes_file, output_dir):
+        """
+        Initialize the DetectDataset class.
+
+        Args:
+            images_dir (str): The directory containing the images.
+            labels_dir (str): The directory containing the labels.
+            classes_file (str): The file containing the class names.
+            output_dir (str): The directory where the output dataset will be saved.
+        """
         self.images_dir = images_dir
         self.labels_dir = labels_dir
         self.classes_file = classes_file
         self.output_dir = Path(output_dir)
 
-    def generate_dataset(self, train_ratio=0.8):
+    def generate(self, train_ratio=0.8):
+        """
+        Generate the dataset.
+
+        This method splits the dataset into training and validation sets based on the `train_ratio` argument,
+        and copies the images and labels to the corresponding directories.
+
+        Args:
+            train_ratio (float, optional): The ratio of images to use for training. Defaults to 0.8.
+        """
         # Create train and val directories
         train_dir = self.output_dir / "train"
         val_dir = self.output_dir / "val"
@@ -57,6 +94,12 @@ class YOLODatasetGenerator:
         self.zip_dataset()
 
     def create_data_yaml(self):
+        """
+        Create a YAML file for the dataset.
+
+        This method creates a YAML file that specifies the paths to the training and validation images,
+        and the class names.
+        """
         data = {
             "path": f"../{self.output_dir}",  # dataset root dir
             "train": "train",  # train images (relative to 'path')
@@ -68,10 +111,15 @@ class YOLODatasetGenerator:
             yaml.dump(data, yaml_file, default_flow_style=False)
 
     def zip_dataset(self):
+        """
+        Zip the dataset.
+
+        This method zips the dataset directory and saves it to the output directory.
+        """
         zip_directory(self.output_dir)
 
 
-class UNETDataGenerator(Sequence):
+class SegmentDataset(Sequence):
     "Generates data for Keras"
 
     def __init__(

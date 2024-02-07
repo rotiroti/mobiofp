@@ -23,11 +23,6 @@ macos-dev-uninstall:
 	pip uninstall -y tensorflow-metal
 	pip uninstall -y -r requirements.txt
 
-format:
-	python -m nbstripout **/*.ipynb
-	python -m black --target-version py39 **/*.py **/*.ipynb
-	python -m isort **/*.py **/*.ipynb
-
 clean:
 	find . -type f -name "*.py[co]" -delete
 	find . -type d -name "__pycache__" -delete

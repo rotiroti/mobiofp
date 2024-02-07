@@ -3,17 +3,11 @@ fingerprint_enhancer
 fingerprint_feature_extractor
 imutils
 ipykernel
-ipython
 ipyfilechooser
 matplotlib
 numpy
 opencv-python
-pillow
 rembg
 scikit-learn
-scikit-image
 tensorflow
 ultralytics
-black
-isort
-nbstripout

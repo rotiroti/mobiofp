@@ -3,48 +3,17 @@ This file contains the implementation of some utility functions used in the proj
 """
 
 import math
+import cv2
+import imutils
+import numpy as np
+import matplotlib.pyplot as plt
+import fingerprint_enhancer as fpe
+
 from typing import Optional
 
-import cv2
-import fingerprint_enhancer as fpe
-import fingerprint_feature_extractor as ffe
-import imutils
-import matplotlib.pyplot as plt
-import numpy as np
-from skimage.morphology import skeletonize
-
-
-def plot_img_hist(image: np.array, title: Optional[str] = "Original Image") -> None:
-    """
-    Plots the image and its histogram with CDF.
-
-    Parameters:
-        image (np.array): The image to be plotted.
-    """
-    # Calculate histogram and CDF
-    hist, _ = np.histogram(image.flatten(), 256, [0, 256])
-    cdf = hist.cumsum()
-    cdf_normalized = cdf * hist.max() / cdf.max()
-
-    # Create the plots
-    plt.figure(figsize=(15, 5))
-
-    # Plot the image
-    plt.subplot(121)
-    plt.imshow(image, cmap="gray")
-    plt.title(title)
-
-    # Plot the histogram with CDF
-    plt.subplot(122)
-    plt.plot(cdf_normalized, color="b")
-    plt.hist(image.flatten(), 256, [0, 256], color="r")
-    plt.xlim([0, 256])
-    plt.legend(("cdf", "histogram"), loc="upper left")
-    plt.title("Histogram")
-
-    plt.tight_layout()
-    plt.show()
-
+# import fingerprint_feature_extractor as ffe
+# from skimage.draw import circle_perimeter, set_color
+# from skimage.morphology import skeletonize
 
 def extract_roi(mask: np.ndarray, factor: float = 1.10) -> (int, int, int, int):
     """
@@ -85,6 +54,37 @@ def crop_image(image: np.ndarray, roi: (int, int, int, int)) -> np.ndarray:
 
     return image[y : y + h, x : x + w]
 
+
+def plot_img_hist(image: np.array, title: Optional[str] = "Original Image") -> None:
+    """
+    Plots the image and its histogram with CDF.
+
+    Parameters:
+        image (np.array): The image to be plotted.
+    """
+    # Calculate histogram and CDF
+    hist, _ = np.histogram(image.flatten(), 256, [0, 256])
+    cdf = hist.cumsum()
+    cdf_normalized = cdf * hist.max() / cdf.max()
+
+    # Create the plots
+    plt.figure(figsize=(15, 5))
+
+    # Plot the image
+    plt.subplot(121)
+    plt.imshow(image, cmap="gray")
+    plt.title(title)
+
+    # Plot the histogram with CDF
+    plt.subplot(122)
+    plt.plot(cdf_normalized, color="b")
+    plt.hist(image.flatten(), 256, [0, 256], color="r")
+    plt.xlim([0, 256])
+    plt.legend(("cdf", "histogram"), loc="upper left")
+    plt.title("Histogram")
+
+    plt.tight_layout()
+    plt.show()
 
 _sigma_conv = (3.0 / 2.0) / ((6 * math.log(10)) ** 0.5)
 
@@ -243,6 +243,13 @@ def enhance_fingerprint(image: np.ndarray) -> np.ndarray:
     This function uses a fingerprint enhancer to improve the clarity of the fingerprint ridges.
     The enhancer is assumed to be an instance of a FingerprintEnhancer class, which has an `enhance_Fingerprint` method.
 
+    The enhancement process includes the following steps:
+
+        1. Normalise the image and find a Region of Interest (ROI).
+        2. Compute the orientation image.
+        3. Compute the major frequency of the ridges.
+        4. Filter the image using an oriented Gabor filter.
+
     Args:
         image (np.ndarray): The input image, assumed to be a grayscale fingerprint image.
 
@@ -256,40 +263,27 @@ def enhance_fingerprint(image: np.ndarray) -> np.ndarray:
     return fpe.enhance_Fingerprint(image)
 
 
-def extract_minutiae(image: np.ndarray, thresh: int = 25):
-    terminations, bifurcations = ffe.extract_minutiae_features(image, thresh)
+# def extract_minutiae(image: np.ndarray, thresh: int = 25):
+#     terminations, bifurcations = ffe.extract_minutiae_features(image, thresh)
 
-    print(f"Total minutiae: {len(terminations) + len(bifurcations)}")
-    print(f"{len(terminations)} terminations.")
-    print(f"{len(bifurcations)} bifurcations.")
-
-    return terminations, bifurcations
+#     return terminations, bifurcations
 
 
-def skeleton(image: np.ndarray) -> np.ndarray:
-    return skeletonize(image).astype(np.uint8) * 255
+# def skeleton(image: np.ndarray) -> np.ndarray:
+#     return skeletonize(image).astype(np.uint8) * 255
 
 
-def show_minutiae(image: np.ndarray, minutiae: list):
-    pass
+# def show_minutiae(image: np.ndarray, minutiae: list):
+#     skel = skeleton(image)
+#     (rows, cols) = skel.shape
+#     disp_img = np.zeros((rows, cols, 3), np.uint8)
+#     disp_img[:, :, 0] = 255 * skel
+#     disp_img[:, :, 1] = 255 * skel
+#     disp_img[:, :, 2] = 255 * skel
 
-    # def showResults(self, FeaturesTerm, FeaturesBif):
+#     for _, curr_minutiae in enumerate(minutiae):
+#         row, col = curr_minutiae.locX, curr_minutiae.locY
+#         (rr, cc) = circle_perimeter(row, col, 3)
+#         set_color(disp_img, (rr, cc), (0, 0, 255))
 
-    #     (rows, cols) = self._skel.shape
-    #     DispImg = np.zeros((rows, cols, 3), np.uint8)
-    #     DispImg[:, :, 0] = 255*self._skel
-    #     DispImg[:, :, 1] = 255*self._skel
-    #     DispImg[:, :, 2] = 255*self._skel
-
-    #     for idx, curr_minutiae in enumerate(FeaturesTerm):
-    #         row, col = curr_minutiae.locX, curr_minutiae.locY
-    #         (rr, cc) = skimage.draw.circle_perimeter(row, col, 3)
-    #         skimage.draw.set_color(DispImg, (rr, cc), (0, 0, 255))
-
-    #     for idx, curr_minutiae in enumerate(FeaturesBif):
-    #         row, col = curr_minutiae.locX, curr_minutiae.locY
-    #         (rr, cc) = skimage.draw.circle_perimeter(row, col, 3)
-    #         skimage.draw.set_color(DispImg, (rr, cc), (255, 0, 0))
-
-    #     cv2.imshow('output', DispImg)
-    #     cv2.waitKey(0)
+#     return disp_img

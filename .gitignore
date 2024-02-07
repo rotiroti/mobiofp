@@ -161,5 +161,5 @@ cython_debug/
 
 # MoBioFP
 .DS_Store
-/data/**/*.png
+/data
 /models

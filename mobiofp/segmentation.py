@@ -1,9 +1,137 @@
 import cv2
 import numpy as np
-import rembg
-from keras import layers, models
-from ultralytics import YOLO
 
+from scipy import ndimage
+from keras import layers, models
+from keras.utils import Sequence
+from keras.preprocessing.image import load_img, img_to_array
+
+class DataGenerator(Sequence):
+    """
+    A data generator class that extends keras.utils.Sequence.
+
+    Ref: https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
+    """    
+    def __init__(
+        self,
+        images,
+        image_dir,
+        labels,
+        label_dir,
+        augmentation=None,
+        preprocessing=None,
+        batch_size=8,
+        dim=(256, 256, 3),
+        shuffle=True,
+    ):
+        """
+        Initialization method for the DataGenerator class.
+
+        Args:
+            images (list): List of image filenames.
+            image_dir (str): Directory where images are stored.
+            labels (list): List of label filenames.
+            label_dir (str): Directory where labels are stored.
+            augmentation (callable, optional): Function for augmenting the images. Defaults to None.
+            preprocessing (callable, optional): Function for preprocessing the images. Defaults to None.
+            batch_size (int, optional): Number of samples per gradient update. Defaults to 8.
+            dim (tuple, optional): Dimensions of the images. Defaults to (256, 256, 3).
+            shuffle (bool, optional): Whether to shuffle the images between epochs. Defaults to True.
+        """
+        self.dim = dim
+        self.images = images
+        self.image_dir = image_dir
+        self.labels = labels
+        self.label_dir = label_dir
+        self.augmentation = augmentation
+        self.preprocessing = preprocessing
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.on_epoch_end()
+
+    def __len__(self):
+        """
+        Denotes the number of batches per epoch.
+
+        Returns:
+            int: Number of batches per epoch.
+        """
+        return int(np.floor(len(self.images) / self.batch_size))
+
+    def __getitem__(self, index):
+        """
+        Generate one batch of data.
+
+        Args:
+            index (int): Index of the batch to generate.
+
+        Returns:
+            tuple: A batch of images and labels.
+        """
+        # Generate indexes of the batch
+        indexes = self.indexes[index * self.batch_size : (index + 1) * self.batch_size]
+
+        # Find list of IDs
+        list_IDs_temp = [k for k in indexes]
+
+        # Generate data
+        X, y = self.__data_generation(list_IDs_temp)
+
+        return X, y
+
+    def on_epoch_end(self):
+        """
+        Updates indexes after each epoch. 
+        If shuffle is True, shuffles the indexes.
+        """
+        self.indexes = np.arange(len(self.images))
+        if self.shuffle:
+            np.random.shuffle(self.indexes)
+
+    def __data_generation(self, list_IDs_temp):
+        """
+        Generates data containing batch_size samples.
+
+        Args:
+            list_IDs_temp (list): List of indexes for the images to include in the batch.
+
+        Returns:
+            tuple: A batch of images and labels.
+        """
+        batch_imgs = list()
+        batch_labels = list()
+
+        for i in list_IDs_temp:
+            # Store sample
+            img = load_img(self.image_dir + "/" + self.images[i], target_size=self.dim)
+            img = img_to_array(img) / 255.0
+
+            # Store class
+            label = load_img(
+                self.label_dir + "/" + self.labels[i], target_size=self.dim
+            )
+            label = img_to_array(label)[:, :, 0]
+            label = label != 0
+            label = ndimage.binary_erosion(ndimage.binary_erosion(label))
+            label = ndimage.binary_dilation(ndimage.binary_dilation(label))
+            label = np.expand_dims((label) * 1, axis=2)
+
+            # apply augmentations
+            if self.augmentation:
+                sample = self.augmentation(image=img, mask=label)
+                img, label = sample["image"], sample["mask"]
+
+            # apply preprocessing
+            if self.preprocessing:
+                sample = self.preprocessing(image=img, mask=label)
+                img, label = sample["image"], sample["mask"]
+
+            batch_imgs.append(img)
+            batch_labels.append(label)
+
+        return np.array(batch_imgs, dtype=np.float32), np.array(
+            batch_labels, dtype=np.float32
+        )
 
 class Segment:
     """
@@ -201,195 +329,44 @@ class Segment:
 
         return out
 
-    # def jaccard_distance_loss(y_true, y_pred, smooth=100):
-
-
-#     """
-#     Calculates the Jaccard distance loss between the true and predicted labels.
-
-#     Parameters:
-#     y_true (tf.Tensor): The true labels.
-#     y_pred (tf.Tensor): The predicted labels.
-#     smooth (int, optional): A smoothing factor to prevent division by zero. Defaults to 100.
-
-#     Returns:
-#     tf.Tensor: The Jaccard distance loss.
-#     """
-#     intersection = K.sum(K.abs(y_true * y_pred), axis=-1)
-#     sum_ = K.sum(K.abs(y_true) + K.abs(y_pred), axis=-1)
-#     jac = (intersection + smooth) / (sum_ - intersection + smooth)
-
-#     return (1 - jac) * smooth
-
-
-# def dice_coef(y_true, y_pred):
-#     """
-#     Calculates the Dice coefficient between the true and predicted labels.
-
-#     Parameters:
-#     y_true (tf.Tensor): The true labels.
-#     y_pred (tf.Tensor): The predicted labels.
-#     smooth (int, optional): A smoothing factor to prevent division by zero. Defaults to 1.
-
-#     Returns:
-#     tf.Tensor: The Dice coefficient.
-#     """
-#     y_true_f = K.flatten(y_true)
-#     y_pred_f = K.flatten(y_pred)
-#     intersection = K.sum(y_true_f * y_pred_f)
-
-#     return (2.0 * intersection + K.epsilon()) / (
-#         K.sum(y_true_f) + K.sum(y_pred_f) + K.epsilon()
-#     )
-
-
-class Detect:
-    """
-    A class used to detect objects in an image using the YOLO model.
-
-    This class provides methods to load the YOLO model from a checkpoint, predict the objects in an image,
-    get the bounding box of the detected objects, extract the region of interest (ROI) from the image,
-    create a mask of the ROI, and visualize the detection results.
-
-    Attributes:
-        _model (YOLO): The YOLO model used for object detection.
-        _checkpoint (str): The path to the checkpoint file for the YOLO model.
-
-    Methods:
-        info(): Print the information of the YOLO model.
-        predict(image: np.ndarray, safe: bool = False): Predict the objects in an image.
-        bbox(result: YOLO): Get the bounding box of the detected objects.
-        roi(result: YOLO, image: np.ndarray): Extract the region of interest (ROI) from the image.
-        mask(result: YOLO, image: np.ndarray): Create a mask of the ROI.
-        show(result: YOLO): Visualize the detection results.
-    """
-
-    _model = None
-    _checkpoint = None
-
-    def __init__(self, checkpoint: str) -> None:
+    def compile(self, optimizer, loss, metrics):
         """
-        Initialize the Detect class.
+        Compiles the U-Net model with an optimizer, a loss function, and a list of metrics.
 
-        This method loads the YOLO model from a checkpoint.
-
-        Args:
-            checkpoint (str): The path to the checkpoint file for the YOLO model.
+        Parameters:
+            optimizer (tf.keras.optimizers.Optimizer): The optimizer to use.
+            loss (tf.keras.losses.Loss): The loss function to use.
+            metrics (list): A list of metrics to use.
         """
-        self._model = YOLO(checkpoint)
-        self._checkpoint = checkpoint
+        self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
-    def info(self):
+    def train(self, train_data, val_data, callbacks, epochs = 100, model_checkpoint = "best.h5"):
         """
-        Print the information of the YOLO model.
+        Trains the U-Net model on the training data.
 
-        This method uses the `info` method of the YOLO model to print its information.
+        Parameters:
+            train_data (tf.data.Dataset): The training data.
+            val_data (tf.data.Dataset): The validation data.
+            epochs (int): The number of epochs to train the model.
+            batch_size (int): The batch size to use during training.
         """
-        self._model.info()
-
-    def predict(self, image: np.ndarray, safe: bool = False):
-        """
-        Predict the objects in an image.
-
-        This method uses the YOLO model to predict the objects in an image. If the `safe` argument is True,
-        it creates a new instance of the YOLO model from the checkpoint for each prediction.
-
-        Args:
-            image (np.ndarray): The input image.
-            safe (bool, optional): Whether to create a new instance of the YOLO model for each prediction. Defaults to False.
-
-        Returns:
-            YOLO: The prediction result.
-
-        Raises:
-            ValueError: If no objects are detected in the image.
-        """
-        local_model = self._model
-
-        if safe:
-            local_model = YOLO(self._checkpoint)
-
-        results = local_model.predict(image, conf=0.85)
-
-        if len(results) == 0:
-            raise ValueError("No objects detected in the image.")
-
-        result = results[0]
-
-        return result
-
-    def bbox(self, result: YOLO) -> [int, int, int, int]:
-        """
-        Get the bounding box of the detected objects.
-
-        This method extracts the bounding box of the detected objects from the prediction result.
-
-        Args:
-            result (YOLO): The prediction result.
-
-        Returns:
-            list: A list of four integers representing the bounding box (x1, y1, x2, y2).
-        """
-        boxes = result.boxes.xyxy.tolist()
-        x1, y1, x2, y2 = boxes[0]
-
-        return int(x1), int(y1), int(x2), int(y2)
-
-    def roi(self, result: YOLO, image: np.ndarray) -> np.ndarray:
-        """
-        Extract the region of interest (ROI) from the image.
-
-        This method extracts the ROI from the image based on the bounding box of the detected objects.
-
-        Args:
-            result (YOLO): The prediction result.
-            image (np.ndarray): The input image.
-
-        Returns:
-            np.ndarray: The ROI.
-        """
-        x1, y1, x2, y2 = self.bbox(result)
-
-        return image[int(y1) : int(y2), int(x1) : int(x2)]
-
-    def mask(self, result: YOLO, image: np.ndarray) -> np.ndarray:
-        """
-        Create a mask of the ROI.
-
-        This method creates a mask of the ROI by removing the background and applying some post-processing steps.
-
-        Args:
-            result (YOLO): The prediction result.
-            image (np.ndarray): The input image.
-
-        Returns:
-            np.ndarray: The mask of the ROI.
-        """
-        roi = self.roi(result, image)
-
-        # Use Rembg to remove background
-        mask = rembg.remove(roi, only_mask=True)
-
-        # Post-process mask
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=2)
-        mask = cv2.GaussianBlur(
-            mask, (5, 5), sigmaX=2, sigmaY=2, borderType=cv2.BORDER_DEFAULT
+        return self.model.fit(
+            train_data,
+            steps_per_epoch=len(train_data),
+            epochs=epochs,
+            callbacks=callbacks,
+            validation_data=val_data,
+            validation_steps=len(val_data),
         )
-        mask = np.where(mask < 127, 0, 255).astype(np.uint8)
 
-        return mask
-
-    def show(self, result: YOLO) -> np.ndarray:
+    def evaluate(self, test_data):
         """
-        Visualize the detection results.
+        Evaluates the U-Net model on the test data.
 
-        This method uses the `plot` method of the prediction result to visualize the detection results.
-
-        Args:
-            result (YOLO): The prediction result.
+        Parameters:
+            test_data (tf.data.Dataset): The test data.
 
         Returns:
-            np.ndarray: The visualization of the detection results.
+            dict: A dictionary containing the evaluation metrics.
         """
-        return result.plot()
+        return self.model.evaluate(test_data, steps=len(test_data))

@@ -5,6 +5,8 @@ import imutils
 import typer
 from tqdm import tqdm
 
+from .detection import UltralyticsDataset
+
 app = typer.Typer()
 
 
@@ -68,3 +70,22 @@ def resize(
         typer.echo(f"Resized image saved to {result_path}")
 
     typer.echo("Done!")
+
+
+@app.command(help="Create dataset for YOLO object detection.")
+def create(
+    images_directory: Path = typer.Argument(
+        ..., help="Path to the input images directory."
+    ),
+    labels_directory: Path = typer.Argument(
+        ..., help="Path to the input labels directory."
+    ),
+    target_directory: Path = typer.Argument(
+        ..., help="Path to the output directory for the generated dataset."
+    ),
+    train_ratio: float = typer.Option(
+        0.8, help="Ratio of images to be included in the training set."
+    ),
+):
+    dataset = UltralyticsDataset(images_directory, labels_directory, target_directory)
+    dataset.create(train_ratio)

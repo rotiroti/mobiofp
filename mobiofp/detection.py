@@ -8,6 +8,7 @@ from pathlib import Path
 from ultralytics import YOLO
 from ultralytics.utils.downloads import zip_directory
 
+
 class UltralyticsDataset:
     """
     A class used to prepare a dataset for object detection according the ultralytics format.
@@ -26,6 +27,7 @@ class UltralyticsDataset:
         create_data_yaml(): Create a YAML file for the dataset.
         zip_dataset(): Zip the dataset.
     """
+
     def __init__(self, images_dir, labels_dir, output_dir):
         """
         Initialize the DetectDataset class.
@@ -115,6 +117,7 @@ class UltralyticsDataset:
         """
         zip_directory(self.output_dir)
 
+
 class Detect:
     """
     A class used to detect objects in an image using the YOLO model.
@@ -159,7 +162,9 @@ class Detect:
         """
         self._model.info()
 
-    def predict(self, image: np.ndarray, safe: bool = False, device: str = "cpu", conf=0.85):
+    def predict(
+        self, image: np.ndarray, safe: bool = False, device: str = "cpu", conf=0.85
+    ):
         """
         Predict the objects in an image.
 

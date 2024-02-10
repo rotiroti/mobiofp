@@ -11,3 +11,7 @@ rembg
 scikit-learn
 tensorflow
 ultralytics
+tqdm
+pandas
+seaborn
+typer

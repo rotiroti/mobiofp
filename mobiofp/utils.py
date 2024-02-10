@@ -1,7 +1,3 @@
-"""
-This file contains the implementation of some utility functions used in the project.
-"""
-
 import math
 import cv2
 import imutils
@@ -11,11 +7,30 @@ import fingerprint_enhancer as fpe
 
 from typing import Optional
 
-# import fingerprint_feature_extractor as ffe
-# from skimage.draw import circle_perimeter, set_color
-# from skimage.morphology import skeletonize
 
-def extract_roi(mask: np.ndarray, factor: float = 1.10) -> (int, int, int, int):
+def find_largest_connected_component(mask: np.ndarray) -> np.array:
+    """
+    Finds the largest connected component in a binary mask.
+    Args:
+        mask: Binary mask containing connected components.
+    Returns:
+        Binary mask with only the largest connected component.
+    """
+    # Find connected components in the mask
+    _, labels, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
+
+    # Find the label of the largest connected component (excluding the background)
+    largest_component_label = np.argmax(stats[1:, cv2.CC_STAT_AREA]) + 1
+
+    # Create a binary mask where the largest connected component is white and everything else is black
+    largest_component_mask = np.where(labels == largest_component_label, 255, 0).astype(
+        np.uint8
+    )
+
+    return largest_component_mask
+
+
+def extract_roi(mask: np.ndarray, factor: float = 1.10) -> tuple[int, int, int, int]:
     """
     Extract ROI from a binary mask.
 
@@ -40,7 +55,7 @@ def extract_roi(mask: np.ndarray, factor: float = 1.10) -> (int, int, int, int):
     return (x_new, y_new, w_new, h_new)
 
 
-def crop_image(image: np.ndarray, roi: (int, int, int, int)) -> np.ndarray:
+def crop_image(image: np.ndarray, roi: tuple[int, int, int, int]) -> np.ndarray:
     """
     Crop an image or a mask using a bounding box.
 
@@ -85,6 +100,7 @@ def plot_img_hist(image: np.array, title: Optional[str] = "Original Image") -> N
 
     plt.tight_layout()
     plt.show()
+
 
 _sigma_conv = (3.0 / 2.0) / ((6 * math.log(10)) ** 0.5)
 
@@ -263,27 +279,73 @@ def enhance_fingerprint(image: np.ndarray) -> np.ndarray:
     return fpe.enhance_Fingerprint(image)
 
 
-# def extract_minutiae(image: np.ndarray, thresh: int = 25):
-#     terminations, bifurcations = ffe.extract_minutiae_features(image, thresh)
+def sharpness_score(image: np.ndarray) -> float:
+    """
+    Calculates the sharpness score of an image using the Laplacian method.
 
-#     return terminations, bifurcations
+    Parameters:
+        image (np.ndarray): Input image.
+
+    Returns:
+        float: Sharpness score of the image.
+    """
+    laplacian = cv2.Laplacian(image.copy(), cv2.CV_64F)
+    score = laplacian.var()
+
+    return score
 
 
-# def skeleton(image: np.ndarray) -> np.ndarray:
-#     return skeletonize(image).astype(np.uint8) * 255
+def contrast_score(image: np.ndarray) -> float:
+    """
+    Calculates the contrast score of an image using histogram analysis.
+
+    Parameters:
+        image (np.ndarray): Input image.
+
+    Returns:
+        float: Contrast score of the image.
+    """
+    hist, _ = np.histogram(image, bins=256, range=[0, 256])
+    cumulative_hist = np.cumsum(hist)
+    total_pixels = image.shape[0] * image.shape[1]
+    low_threshold = 0.05 * total_pixels
+    high_threshold = 0.95 * total_pixels
+    low_intensity = np.argmax(cumulative_hist > low_threshold)
+    high_intensity = np.argmax(cumulative_hist > high_threshold)
+    score = high_intensity - low_intensity
+
+    return score
 
 
-# def show_minutiae(image: np.ndarray, minutiae: list):
-#     skel = skeleton(image)
-#     (rows, cols) = skel.shape
-#     disp_img = np.zeros((rows, cols, 3), np.uint8)
-#     disp_img[:, :, 0] = 255 * skel
-#     disp_img[:, :, 1] = 255 * skel
-#     disp_img[:, :, 2] = 255 * skel
+def coverage_percentage(mask: np.ndarray) -> float:
+    """
+    Calculates the percentage of the image covered by a mask.
 
-#     for _, curr_minutiae in enumerate(minutiae):
-#         row, col = curr_minutiae.locX, curr_minutiae.locY
-#         (rr, cc) = circle_perimeter(row, col, 3)
-#         set_color(disp_img, (rr, cc), (0, 0, 255))
+    Parameters:
+        mask (np.ndarray): Input mask.
 
-#     return disp_img
+    Returns:
+        float: Coverage percentage.
+    """
+    total_pixels = np.sum(mask > 0)
+    percentage = (total_pixels / (mask.shape[0] * mask.shape[1])) * 100
+
+    return percentage
+
+
+def quality_scores(image: np.ndarray, mask: np.ndarray) -> tuple[float, float, float]:
+    """
+    Computes the quality scores (sharpness, contrast, coverage) of an image.
+
+    Parameters:
+        image (np.ndarray): Input image.
+        mask (np.ndarray): Input mask.
+
+    Returns:
+        tuple: A tuple containing the sharpness, contrast, and coverage scores.
+    """
+    sharpness = sharpness_score(image)
+    contrast = contrast_score(image)
+    coverage = coverage_percentage(mask)
+
+    return sharpness, contrast, coverage

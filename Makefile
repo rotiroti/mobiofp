@@ -1,4 +1,4 @@
-.PHONY: help dev-install dev-uninstall macos-dev-install macos-dev-uninstall clean format
+.PHONY: help dev-install dev-uninstall macos-dev-install macos-dev-uninstall clean
 
 help:
 	@echo "dev-install - install the package in editable mode"

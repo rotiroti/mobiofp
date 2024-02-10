@@ -6,12 +6,14 @@ from keras import layers, models
 from keras.utils import Sequence
 from keras.preprocessing.image import load_img, img_to_array
 
+
 class DataGenerator(Sequence):
     """
     A data generator class that extends keras.utils.Sequence.
 
     Ref: https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
-    """    
+    """
+
     def __init__(
         self,
         images,
@@ -81,7 +83,7 @@ class DataGenerator(Sequence):
 
     def on_epoch_end(self):
         """
-        Updates indexes after each epoch. 
+        Updates indexes after each epoch.
         If shuffle is True, shuffles the indexes.
         """
         self.indexes = np.arange(len(self.images))
@@ -132,6 +134,7 @@ class DataGenerator(Sequence):
         return np.array(batch_imgs, dtype=np.float32), np.array(
             batch_labels, dtype=np.float32
         )
+
 
 class Segment:
     """
@@ -340,7 +343,9 @@ class Segment:
         """
         self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
-    def train(self, train_data, val_data, callbacks, epochs = 100, model_checkpoint = "best.h5"):
+    def train(
+        self, train_data, val_data, callbacks, epochs=100, model_checkpoint="best.h5"
+    ):
         """
         Trains the U-Net model on the training data.
 

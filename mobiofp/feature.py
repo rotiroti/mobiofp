@@ -1,10 +1,10 @@
-import typer
-import cv2
 import pickle
-import imutils
-
-from tqdm import tqdm
 from pathlib import Path
+
+import cv2
+import imutils
+import typer
+from tqdm import tqdm
 
 app = typer.Typer()
 

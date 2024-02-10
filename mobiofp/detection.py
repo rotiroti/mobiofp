@@ -1,10 +1,10 @@
+import shutil
+from pathlib import Path
+
 import cv2
+import numpy as np
 import rembg
 import yaml
-import shutil
-import numpy as np
-
-from pathlib import Path
 from ultralytics import YOLO
 from ultralytics.utils.downloads import zip_directory
 
@@ -118,6 +118,7 @@ class UltralyticsDataset:
         zip_directory(self.output_dir)
 
 
+# TODO: Remove this class and use directly the YOLO class from ultralytics
 class Detect:
     """
     A class used to detect objects in an image using the YOLO model.

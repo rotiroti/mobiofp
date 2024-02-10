@@ -1,6 +1,6 @@
 import typer
 
-from . import fingertip, feature, dataset
+from . import dataset, feature, fingertip
 
 app = typer.Typer()
 app.add_typer(fingertip.app, name="fingertip")

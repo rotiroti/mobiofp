@@ -1,9 +1,9 @@
-import typer
+from pathlib import Path
+
 import cv2
 import imutils
-
+import typer
 from tqdm import tqdm
-from pathlib import Path
 
 app = typer.Typer()
 

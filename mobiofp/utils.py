@@ -1,11 +1,11 @@
 import math
-import cv2
-import imutils
-import numpy as np
-import matplotlib.pyplot as plt
-import fingerprint_enhancer as fpe
-
 from typing import Optional
+
+import cv2
+import fingerprint_enhancer as fpe
+import imutils
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 def find_largest_connected_component(mask: np.ndarray) -> np.array:

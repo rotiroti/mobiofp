@@ -1,10 +1,9 @@
 import cv2
 import numpy as np
-
-from scipy import ndimage
 from keras import layers, models
+from keras.preprocessing.image import img_to_array, load_img
 from keras.utils import Sequence
-from keras.preprocessing.image import load_img, img_to_array
+from scipy import ndimage
 
 
 class DataGenerator(Sequence):

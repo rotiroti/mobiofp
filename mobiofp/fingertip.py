@@ -1,22 +1,22 @@
-import typer
+import csv
+import shutil
+from pathlib import Path
+
 import cv2
 import numpy as np
-import shutil
-import csv
-
+import typer
+from rembg import new_session, remove
 from tqdm import tqdm
-from pathlib import Path
-from rembg import remove, new_session
 from ultralytics import YOLO, settings
 
 from .segmentation import Segment
 from .utils import (
-    extract_roi,
     crop_image,
-    find_largest_connected_component,
-    to_fingerprint,
     enhance_fingerprint,
+    extract_roi,
+    find_largest_connected_component,
     quality_scores,
+    to_fingerprint,
 )
 
 app = typer.Typer()

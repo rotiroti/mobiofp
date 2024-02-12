@@ -6,7 +6,7 @@ ipykernel
 ipyfilechooser
 matplotlib
 numpy
-opencv-python
+opencv-contrib-python
 rembg
 scikit-learn
 tensorflow
@@ -15,3 +15,4 @@ tqdm
 pandas
 seaborn
 typer
+superpoint_superglue_deployment

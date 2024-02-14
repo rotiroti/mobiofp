@@ -30,7 +30,7 @@ def find_largest_connected_component(mask: np.ndarray) -> np.array:
     return largest_component_mask
 
 
-def extract_roi(mask: np.ndarray, factor: float = 1.10) -> tuple[int, int, int, int]:
+def extract_roi(mask: np.ndarray, factor: float = 1.0) -> tuple[int, int, int, int]:
     """
     Extract ROI from a binary mask.
 

@@ -11,20 +11,17 @@ app = typer.Typer()
 
 @app.command(help="Select a random instance for each finger and create a template.")
 def select(
-    features_directory: Path = typer.Argument(
-        ..., help="Path to the input features directory."
+    mapping_directory: Path = typer.Argument(
+        ..., help="Path to the mapping directory"
     ),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
 ):
     subjects = {}
-    illuminations = set()
-    backgrounds = set()
 
     # 1. Read all the features and create a dictionary with the following structure:
     typer.echo("Reading features...")
-    for features_path in tqdm(list(Path(features_directory).glob("*.pickle"))):
-        filename = features_path.stem
-
+    for mapping_path in tqdm(list(Path(mapping_directory).glob("*.png"))):
+        filename = mapping_path.stem
         subject_id, illumination, finger_id, background, instance_id = filename.split(
             "_"
         )
@@ -34,42 +31,31 @@ def select(
             int(instance_id),
         )
 
-        illuminations.add(illumination)
-        backgrounds.add(background)
-        subjects.setdefault(subject_id, {}).setdefault(finger_id, []).append(
-            instance_id
-        )
+        subject_key = f"{subject_id}_{illumination}_{background}"
+        subjects.setdefault(subject_key, {}).setdefault(finger_id, []).append(instance_id)
 
-    # 2. Check that all features have the same illumination and background
-    typer.echo("Checking features...")
-    if len(illuminations) > 1 or len(backgrounds) > 1:
-        raise ValueError(
-            "All the images must have the same illumination and background"
-        )
-
-    # 3. Create a list of templates that will be used for the enrollment.
+    # 2. Create a list of templates that will be used for the enrollment.
     output_files = []
-    illumination = illuminations.pop()
-    background = backgrounds.pop()
 
     typer.echo("Selecting templates...")
-    for subject_id in subjects:
-        for finger_id in subjects[subject_id]:
-            # Pick a random instance for each finger
-            instance_id = random.choice(subjects[subject_id][finger_id])
+    for subject_key in subjects:
+        for finger_id in subjects[subject_key]:
 
-            feature_filename = f"{subject_id}_{illumination}_{finger_id}_{background}_{instance_id}.pickle"
-            template_filename = (
-                f"{subject_id}_{illumination}_{finger_id}_{background}.pickle"
-            )
+            # Pick a random instance for each finger
+            instance_id = random.choice(subjects[subject_key][finger_id])
+
+            # Reconstruct back the original mapping path
+            subject_id, illumination, background = subject_key.split("_")
+            feature_filename = f"{subject_id}_{illumination}_{finger_id}_{background}_{instance_id}.png"
+            template_filename = f"{subject_id}_{illumination}_{finger_id}_{background}.png"
 
             output_file = {
-                "feature": features_directory / feature_filename,
+                "feature": mapping_directory / feature_filename,
                 "template": target_directory / template_filename,
             }
             output_files.append(output_file)
 
-    # 4. Copy the selected templates to the target directory
+    # 3. Copy the selected templates to the target directory
     target_directory.mkdir(parents=True, exist_ok=True)
 
     typer.echo("Copying templates...")

@@ -24,12 +24,8 @@ app = typer.Typer()
 
 @app.command(help="Fingertip Segmentation.")
 def segment(
-    source_directory: Path = typer.Argument(
-        ..., help="Path to the input images directory."
-    ),
-    model_file: Path = typer.Argument(
-        ..., help="Path to the model checkpoint for segmentation."
-    ),
+    source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
+    model_file: Path = typer.Argument(..., help="Path to the model checkpoint for segmentation."),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
 ):
     # Load segmentation model
@@ -75,12 +71,8 @@ def segment(
 
 @app.command(help="Fingertip Detection.")
 def detect(
-    source_directory: Path = typer.Argument(
-        ..., help="Path to the input images directory."
-    ),
-    model_file: Path = typer.Argument(
-        ..., help="Path to the model checkpoint for detection."
-    ),
+    source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
+    model_file: Path = typer.Argument(..., help="Path to the model checkpoint for detection."),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
 ):
     # Create output directories
@@ -93,9 +85,7 @@ def detect(
     model = YOLO(str(model_file))
 
     # Run inference on all images in the source directory
-    results = model(
-        source_directory, stream=True, max_det=1, save_txt=True, save_crop=True
-    )
+    results = model(source_directory, stream=True, max_det=1, save_txt=True, save_crop=True)
 
     # Consume generator to process all images
     for _ in results:
@@ -146,9 +136,7 @@ def background(
         # Post-process mask
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=2)
-        mask = cv2.GaussianBlur(
-            mask, (5, 5), sigmaX=2, sigmaY=2, borderType=cv2.BORDER_DEFAULT
-        )
+        mask = cv2.GaussianBlur(mask, (5, 5), sigmaX=2, sigmaY=2, borderType=cv2.BORDER_DEFAULT)
         mask = np.where(mask < 127, 0, 255).astype(np.uint8)
 
         # Find the largest connected component
@@ -167,13 +155,9 @@ def enhance(
     fingertips_directory: Path = typer.Argument(
         ..., help="Path to the fingertip images directory."
     ),
-    mask_directory: Path = typer.Argument(
-        ..., help="Path to the fingertip masks directory."
-    ),
+    mask_directory: Path = typer.Argument(..., help="Path to the fingertip masks directory."),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
-    coverage_thresh: float = typer.Option(
-        65.0, help="Binary Mask Coverage percentage threshold."
-    ),
+    coverage_thresh: float = typer.Option(65.0, help="Binary Mask Coverage percentage threshold."),
 ):
     # Create output directories
     images_dir = Path(target_directory) / "enhancement"
@@ -190,9 +174,7 @@ def enhance(
         _, _, coverage = quality_scores(image, mask)
 
         if coverage < coverage_thresh:
-            typer.echo(
-                f"Skipping {image_path} due to low ({coverage:.2f}) coverage percentage."
-            )
+            typer.echo(f"Skipping {image_path} due to low ({coverage:.2f}) coverage percentage.")
             continue
 
         typer.echo(
@@ -256,13 +238,9 @@ def iqa(
     fingertips_directory: Path = typer.Argument(
         ..., help="Path to the enhanced fingertip images directory."
     ),
-    mask_directory: Path = typer.Argument(
-        ..., help="Path to the fingertip masks directory."
-    ),
+    mask_directory: Path = typer.Argument(..., help="Path to the fingertip masks directory."),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
-    report_file: Path = typer.Option(
-        "quality_scores.csv", help="Path to the output report file."
-    ),
+    report_file: Path = typer.Option("quality_scores.csv", help="Path to the output report file."),
 ):
     # Create output directories
     report_dir = Path(target_directory)

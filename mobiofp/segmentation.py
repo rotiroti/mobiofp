@@ -108,9 +108,7 @@ class DataGenerator(Sequence):
             img = img_to_array(img) / 255.0
 
             # Store class
-            label = load_img(
-                self.label_dir + "/" + self.labels[i], target_size=self.dim
-            )
+            label = load_img(self.label_dir + "/" + self.labels[i], target_size=self.dim)
             label = img_to_array(label)[:, :, 0]
             label = label != 0
             label = ndimage.binary_erosion(ndimage.binary_erosion(label))
@@ -130,9 +128,7 @@ class DataGenerator(Sequence):
             batch_imgs.append(img)
             batch_labels.append(label)
 
-        return np.array(batch_imgs, dtype=np.float32), np.array(
-            batch_labels, dtype=np.float32
-        )
+        return np.array(batch_imgs, dtype=np.float32), np.array(batch_labels, dtype=np.float32)
 
 
 class Segment:
@@ -190,18 +186,14 @@ class Segment:
         deconv7 = layers.Dropout(0.5)(deconv7)
         deconv8 = self._deconv_block(deconv7, residual=conv2, nfilters=filters * 2)
         deconv9 = self._deconv_block(deconv8, residual=conv1, nfilters=filters)
-        output_layer = layers.Conv2D(
-            filters=1, kernel_size=(1, 1), activation="sigmoid"
-        )(deconv9)
+        output_layer = layers.Conv2D(filters=1, kernel_size=(1, 1), activation="sigmoid")(deconv9)
 
         # using sigmoid activation for binary classification
         model = models.Model(inputs=input_layer, outputs=output_layer, name="Unet")
 
         return model
 
-    def _conv_block(
-        self, tensor, nfilters, size=3, padding="same", initializer="he_normal"
-    ):
+    def _conv_block(self, tensor, nfilters, size=3, padding="same", initializer="he_normal"):
         """
         Defines a convolutional block with two Conv2D layers, each followed by BatchNormalization and ReLU activation.
 
@@ -234,9 +226,7 @@ class Segment:
 
         return x
 
-    def _deconv_block(
-        self, tensor, residual, nfilters, size=3, padding="same", strides=(2, 2)
-    ):
+    def _deconv_block(self, tensor, residual, nfilters, size=3, padding="same", strides=(2, 2)):
         """
         Defines a deconvolutional block with a Conv2DTranspose layer followed by a concatenation with the residual, and a convolutional block.
 
@@ -298,9 +288,7 @@ class Segment:
         input = cv2.resize(img, (256, 256), interpolation=cv2.INTER_AREA) / 255.0
         input = np.expand_dims(input, axis=0)
         mask = (self.model.predict(input) > 0.5).astype(np.uint8).reshape(256, 256)
-        mask = cv2.resize(
-            mask, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_LINEAR
-        )
+        mask = cv2.resize(mask, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_LINEAR)
 
         if postprocess:
             mask = self._postprocess(mask)
@@ -342,9 +330,7 @@ class Segment:
         """
         self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
-    def train(
-        self, train_data, val_data, callbacks, epochs=100, model_checkpoint="best.h5"
-    ):
+    def train(self, train_data, val_data, callbacks, epochs=100, model_checkpoint="best.h5"):
         """
         Trains the U-Net model on the training data.
 

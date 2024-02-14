@@ -3,75 +3,69 @@ from pathlib import Path
 
 import cv2
 import imutils
-import typer
 import pandas as pd
+import typer
 from tqdm import tqdm
 
 app = typer.Typer()
 
 
-@app.command(help="Extract features using OpenCV ORB.")
-def extract(
-    mapping_directory: Path = typer.Argument(
-        ..., help="Path to the input mapping directory."
-    ),
-    target_directory: Path = typer.Argument(..., help="Path to the output directory."),
-    method: str = typer.Option("orb", help="Feature extraction method."),
-    thinning: bool = typer.Option(False, help="Whether to thin the fingerprint image."),
-    features: int = typer.Option(500, help="Maximum number of features to retain."),
-):
-    # Create output directory
-    features_dir = Path(target_directory) / "features"
-    features_dir.mkdir(parents=True, exist_ok=True)
+# @app.command(help="Extract features using OpenCV ORB.")
+# def extract(
+#     mapping_directory: Path = typer.Argument(..., help="Path to the input mapping directory."),
+#     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
+#     method: str = typer.Option("orb", help="Feature extraction method."),
+#     thinning: bool = typer.Option(False, help="Whether to thin the fingerprint image."),
+#     features: int = typer.Option(500, help="Maximum number of features to retain."),
+# ):
+#     # Create output directory
+#     features_dir = Path(target_directory) / "features"
+#     features_dir.mkdir(parents=True, exist_ok=True)
 
-    # Process each image in the directory
-    for image_path in tqdm(list(Path(mapping_directory).glob("*.png"))):
-        image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+#     # Process each image in the directory
+#     for image_path in tqdm(list(Path(mapping_directory).glob("*.png"))):
+#         image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
 
-        if thinning:
-            image = imutils.skeletonize(image)
+#         if thinning:
+#             image = imutils.skeletonize(image)
 
-        descriptors = None
-        if method == "orb":
-            descriptor = cv2.ORB_create(nfeatures=features)
-        elif method == "sift":
-            descriptor = cv2.SIFT_create(nfeatures=features)
-        elif method == "brief":
-            descriptor = cv2.BRIEF_create(nfeatures=features)
-        elif method == "brisk":
-            descriptor = cv2.BRISK_create(nfeatures=features)
-        elif method == "freak":
-            descriptor = cv2.FastFeatureDetector_create(nfeatures=features)
-        else:
-            raise ValueError(f"Unknown method: {method}")
+#         descriptors = None
+#         if method == "orb":
+#             descriptor = cv2.ORB_create(nfeatures=features)
+#         elif method == "sift":
+#             descriptor = cv2.SIFT_create(nfeatures=features)
+#         elif method == "brief":
+#             descriptor = cv2.BRIEF_create(nfeatures=features)
+#         elif method == "brisk":
+#             descriptor = cv2.BRISK_create(nfeatures=features)
+#         elif method == "freak":
+#             descriptor = cv2.FastFeatureDetector_create(nfeatures=features)
+#         else:
+#             raise ValueError(f"Unknown method: {method}")
 
-        # Find the keypoints and descriptors
-        keypoints, descriptors = descriptor.detectAndCompute(image, None)
+#         # Find the keypoints and descriptors
+#         keypoints, descriptors = descriptor.detectAndCompute(image, None)
 
-        # Convert keypoints to a list of tuples
-        keypoints_list = [
-            (kp.pt[0], kp.pt[1], kp.size, kp.angle, kp.response, kp.octave, kp.class_id)
-            for kp in keypoints
-        ]
+#         # Convert keypoints to a list of tuples
+#         keypoints_list = [
+#             (kp.pt[0], kp.pt[1], kp.size, kp.angle, kp.response, kp.octave, kp.class_id)
+#             for kp in keypoints
+#         ]
 
-        # Save keypoints and descriptors
-        features_path = features_dir / image_path.with_suffix(".pickle").name
+#         # Save keypoints and descriptors
+#         features_path = features_dir / image_path.with_suffix(".pickle").name
 
-        with open(features_path, "wb") as f:
-            pickle.dump((keypoints_list, descriptors), f)
+#         with open(features_path, "wb") as f:
+#             pickle.dump((keypoints_list, descriptors), f)
 
-    typer.echo("Done!")
+#     typer.echo("Done!")
 
 
 @app.command(help="Show information about the features.")
 def info(
-    features_directory: Path = typer.Argument(
-        ..., help="Path to the input features directory."
-    ),
+    features_directory: Path = typer.Argument(..., help="Path to the input features directory."),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
-    output_file: str = typer.Option(
-        "features_list.csv", help="Name of the output file."
-    ),
+    output_file: str = typer.Option("features_list.csv", help="Name of the output file."),
 ):
     # Create a set to store the subjects and a dictionary to store the finger counter
     subjects = set()

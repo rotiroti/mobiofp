@@ -1,4 +1,3 @@
-from .detection import Detect, UltralyticsDataset
 from .segmentation import DataGenerator, Segment
 from .utils import (
     contrast_score,
@@ -26,8 +25,6 @@ __all__ = (
     "sharpness_score",
     "contrast_score",
     "coverage_percentage",
-    "Detect",
-    "UltralyticsDataset",
     "Segment",
     "DataGenerator",
 )

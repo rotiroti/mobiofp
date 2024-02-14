@@ -23,51 +23,9 @@ def find_largest_connected_component(mask: np.ndarray) -> np.array:
     largest_component_label = np.argmax(stats[1:, cv2.CC_STAT_AREA]) + 1
 
     # Create a binary mask where the largest connected component is white and everything else is black
-    largest_component_mask = np.where(labels == largest_component_label, 255, 0).astype(
-        np.uint8
-    )
+    largest_component_mask = np.where(labels == largest_component_label, 255, 0).astype(np.uint8)
 
     return largest_component_mask
-
-
-def extract_roi(mask: np.ndarray, factor: float = 1.0) -> tuple[int, int, int, int]:
-    """
-    Extract ROI from a binary mask.
-
-    Args:
-        mask: Binary mask.
-        factor: Factor to increase the size of the ROI.
-    Returns:
-        Tuple with four coordinates representing the bounding box rectangle.
-    """
-    contours, _ = cv2.findContours(
-        mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-    )
-    contour = max(contours, key=cv2.contourArea)
-    x, y, w, h = cv2.boundingRect(contour)
-
-    # Adjust the size of the ROI by a factor
-    w_new = int(w * factor)
-    h_new = int(h * factor)
-    x_new = max(0, x - (w_new - w) // 2)
-    y_new = max(0, y - (h_new - h) // 2)
-
-    return (x_new, y_new, w_new, h_new)
-
-
-def crop_image(image: np.ndarray, roi: tuple[int, int, int, int]) -> np.ndarray:
-    """
-    Crop an image or a mask using a bounding box.
-
-    Args:
-        image: Image to be cropped.
-        roi: Tuple with four coordinates representing the bounding box rectangle.
-    Returns:
-        Cropped image.
-    """
-    x, y, w, h = roi
-
-    return image[y : y + h, x : x + w]
 
 
 def plot_img_hist(image: np.array, title: Optional[str] = "Original Image") -> None:
@@ -123,7 +81,8 @@ def _gabor_size(ridge_period):
         tuple: A tuple of two integers representing the size of the Gabor filter (height, width).
 
     Reference:
-        This function is based on the implementation of "Hands on Fingerprint Recognition with OpenCV and Python" by Raffaele Cappelli.
+        This function is based on the implementation of
+        "Hands on Fingerprint Recognition with OpenCV and Python" by Raffaele Cappelli.
         https://tinyurl.com/hands-on-fr
     """
     p = int(round(ridge_period * 2 + 1))
@@ -150,7 +109,8 @@ def _gabor_kernel(period, orientation):
         ndarray: A 2D array representing the Gabor filter kernel.
 
     Reference:
-        This function is based on the implementation of "Hands on Fingerprint Recognition with OpenCV and Python" by Raffaele Cappelli.
+        This function is based on the implementation of
+        "Hands on Fingerprint Recognition with OpenCV and Python" by Raffaele Cappelli.
         https://tinyurl.com/hands-on-fr
     """
     f = cv2.getGaborKernel(
@@ -184,15 +144,14 @@ def to_fingerprint(image: np.array, width: int = 400) -> np.array:
         np.array: The enhanced fingerprint image.
 
     Reference:
-        This function is based on the implementation of "Hands on Fingerprint Recognition with OpenCV and Python" by Raffaele Cappelli.
+        This function is based on the implementation of
+        "Hands on Fingerprint Recognition with OpenCV and Python" by Raffaele Cappelli.
         https://tinyurl.com/hands-on-fr
     """
     fingerprint = imutils.resize(image.copy(), width)
 
     # Calculate the local gradient (using Sobel filters)
-    gx, gy = cv2.Sobel(fingerprint, cv2.CV_32F, 1, 0), cv2.Sobel(
-        fingerprint, cv2.CV_32F, 0, 1
-    )
+    gx, gy = cv2.Sobel(fingerprint, cv2.CV_32F, 1, 0), cv2.Sobel(fingerprint, cv2.CV_32F, 0, 1)
 
     # Calculate the magnitude of the gradient for each pixel
     gx2, gy2 = gx**2, gy**2
@@ -206,7 +165,6 @@ def to_fingerprint(image: np.array, width: int = 400) -> np.array:
 
     orientations = (cv2.phase(gxx_gyy, -gxy2) + np.pi) / 2
 
-    # _region = fingerprint[10:90,80:130]
     center_h = fingerprint.shape[0] // 3
     center_w = fingerprint.shape[1] // 2
     region = fingerprint[center_h - 40 : center_h + 40, center_w + 10 : center_w + 60]
@@ -216,9 +174,7 @@ def to_fingerprint(image: np.array, width: int = 400) -> np.array:
     xs = np.sum(smoothed, 1)  # the x-signature of the region
 
     # Find the indices of the x-signature local maxima
-    local_maxima = np.nonzero(
-        np.r_[False, xs[1:] > xs[:-1]] & np.r_[xs[:-1] >= xs[1:], False]
-    )[0]
+    local_maxima = np.nonzero(np.r_[False, xs[1:] > xs[:-1]] & np.r_[xs[:-1] >= xs[1:], False])[0]
 
     # Calculate all the distances between consecutive peaks
     distances = local_maxima[1:] - local_maxima[:-1]
@@ -228,9 +184,7 @@ def to_fingerprint(image: np.array, width: int = 400) -> np.array:
 
     # Create the filter bank
     or_count = 8
-    gabor_bank = [
-        _gabor_kernel(ridge_period, o) for o in np.arange(0, np.pi, np.pi / or_count)
-    ]
+    gabor_bank = [_gabor_kernel(ridge_period, o) for o in np.arange(0, np.pi, np.pi / or_count)]
 
     # Filter the whole image with each filter
     nf = 255 - fingerprint
@@ -240,8 +194,7 @@ def to_fingerprint(image: np.array, width: int = 400) -> np.array:
 
     # For each pixel, find the index of the closest orientation in the gabor bank
     orientation_idx = (
-        np.round(((orientations % np.pi) / np.pi) * or_count).astype(np.int32)
-        % or_count
+        np.round(((orientations % np.pi) / np.pi) * or_count).astype(np.int32) % or_count
     )
     # Take the corresponding convolution result for each pixel, to assemble the final result
     filtered = all_filtered[orientation_idx, y_coords, x_coords]
@@ -349,3 +302,43 @@ def quality_scores(image: np.ndarray, mask: np.ndarray) -> tuple[float, float, f
     coverage = coverage_percentage(mask)
 
     return sharpness, contrast, coverage
+
+
+def extract_roi(mask: np.ndarray, factor: float = 1.0) -> tuple[int, int, int, int]:
+    """
+    Extract ROI from a binary mask.
+
+    Args:
+        mask: Binary mask.
+        factor: Factor to increase the size of the ROI.
+    Returns:
+        Tuple with four coordinates representing the bounding box rectangle.
+    """
+    contours, _ = cv2.findContours(
+        mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+    )
+    contour = max(contours, key=cv2.contourArea)
+    x, y, w, h = cv2.boundingRect(contour)
+
+    # Adjust the size of the ROI by a factor
+    w_new = int(w * factor)
+    h_new = int(h * factor)
+    x_new = max(0, x - (w_new - w) // 2)
+    y_new = max(0, y - (h_new - h) // 2)
+
+    return (x_new, y_new, w_new, h_new)
+
+
+def crop_image(image: np.ndarray, roi: tuple[int, int, int, int]) -> np.ndarray:
+    """
+    Crop an image or a mask using a bounding box.
+
+    Args:
+        image: Image to be cropped.
+        roi: Tuple with four coordinates representing the bounding box rectangle.
+    Returns:
+        Cropped image.
+    """
+    x, y, w, h = roi
+
+    return image[y : y + h, x : x + w]

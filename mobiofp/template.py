@@ -1,9 +1,9 @@
 import pickle
-import cv2
+import random
 from pathlib import Path
 
+import cv2
 import typer
-import random
 from tqdm import tqdm
 
 app = typer.Typer()
@@ -11,9 +11,7 @@ app = typer.Typer()
 
 @app.command(help="Select a random instance for each finger and create a template.")
 def select(
-    mapping_directory: Path = typer.Argument(
-        ..., help="Path to the mapping directory"
-    ),
+    mapping_directory: Path = typer.Argument(..., help="Path to the mapping directory"),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
 ):
     subjects = {}
@@ -22,9 +20,7 @@ def select(
     typer.echo("Reading features...")
     for mapping_path in tqdm(list(Path(mapping_directory).glob("*.png"))):
         filename = mapping_path.stem
-        subject_id, illumination, finger_id, background, instance_id = filename.split(
-            "_"
-        )
+        subject_id, illumination, finger_id, background, instance_id = filename.split("_")
         subject_id, finger_id, instance_id = (
             int(subject_id),
             int(finger_id),
@@ -46,7 +42,9 @@ def select(
 
             # Reconstruct back the original mapping path
             subject_id, illumination, background = subject_key.split("_")
-            feature_filename = f"{subject_id}_{illumination}_{finger_id}_{background}_{instance_id}.png"
+            feature_filename = (
+                f"{subject_id}_{illumination}_{finger_id}_{background}_{instance_id}.png"
+            )
             template_filename = f"{subject_id}_{illumination}_{finger_id}_{background}.png"
 
             output_file = {
@@ -87,9 +85,7 @@ def score(
         ]
 
     params = {"algorithm": 1, "trees": 10}
-    matches = cv2.FlannBasedMatcher(params).knnMatch(
-        probe_descriptors, gallery_descriptors, k=2
-    )
+    matches = cv2.FlannBasedMatcher(params).knnMatch(probe_descriptors, gallery_descriptors, k=2)
     match_points = []
 
     for m, n in matches:

@@ -27,3 +27,6 @@ clean:
 	find . -type f -name "*.py[co]" -delete
 	find . -type d -name "__pycache__" -delete
 	rm -rf *.egg-info
+	rm -fr notebooks/.ipynb_checkpoints
+	rm -fr notebooks/cache
+	rm -fr data/processed/samples/*

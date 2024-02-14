@@ -1,10 +1,8 @@
 import math
-from typing import Optional
 
 import cv2
 import fingerprint_enhancer as fpe
 import imutils
-import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -26,39 +24,6 @@ def find_largest_connected_component(mask: np.ndarray) -> np.array:
     largest_component_mask = np.where(labels == largest_component_label, 255, 0).astype(np.uint8)
 
     return largest_component_mask
-
-
-def plot_img_hist(image: np.array, title: Optional[str] = "Original Image") -> None:
-    """
-    Plots the image and its histogram with CDF.
-
-    Parameters:
-        image (np.array): The image to be plotted.
-    """
-    # Calculate histogram and CDF
-    hist, _ = np.histogram(image.flatten(), 256, [0, 256])
-    cdf = hist.cumsum()
-    cdf_normalized = cdf * hist.max() / cdf.max()
-
-    # Create the plots
-    plt.figure(figsize=(15, 5))
-
-    # Plot the image
-    plt.subplot(121)
-    plt.imshow(image, cmap="gray")
-    plt.title(title)
-
-    # Plot the histogram with CDF
-    plt.subplot(122)
-    plt.plot(cdf_normalized, color="b")
-    plt.hist(image.flatten(), 256, [0, 256], color="r")
-    plt.xlim([0, 256])
-    plt.legend(("cdf", "histogram"), loc="upper left")
-    plt.title("Histogram")
-
-    plt.tight_layout()
-    plt.show()
-
 
 _sigma_conv = (3.0 / 2.0) / ((6 * math.log(10)) ** 0.5)
 

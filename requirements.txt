@@ -3,7 +3,6 @@ fingerprint_enhancer
 fingerprint_feature_extractor
 imutils
 ipykernel
-ipyfilechooser
 matplotlib
 numpy
 opencv-contrib-python

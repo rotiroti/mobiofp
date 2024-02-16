@@ -63,3 +63,4 @@ clean:
 	rm -fr cache
 	rm -fr notebooks/.ipynb_checkpoints
 	rm -fr notebooks/cache
+	rm -fr build

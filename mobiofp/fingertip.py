@@ -10,9 +10,15 @@ from tqdm import tqdm
 from ultralytics import YOLO, settings
 
 from .segmentation import Segment
-from .utils import (crop_image, extract_roi, fingerprint_enhancement,
-                    fingerprint_mapping, fingertip_enhancement,
-                    post_process_mask, quality_scores)
+from .utils import (
+    crop_image,
+    extract_roi,
+    fingerprint_enhancement,
+    fingerprint_mapping,
+    fingertip_enhancement,
+    post_process_mask,
+    quality_scores,
+)
 
 app = typer.Typer()
 

@@ -163,4 +163,7 @@ cython_debug/
 .DS_Store
 /data
 /models
+/cache
 /notebooks/cache
+*.h5
+*.pt

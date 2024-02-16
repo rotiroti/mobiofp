@@ -11,34 +11,35 @@ from ultralytics.utils.downloads import zip_directory
 app = typer.Typer()
 
 
+def process_images(source_directory: Path, target_directory: Path, operation, operation_name: str):
+    images_dir = Path(target_directory)
+    images_dir.mkdir(parents=True, exist_ok=True)
+
+    for image_path in tqdm(list(Path(source_directory).glob("*.jpg"))):
+        image = cv2.imread(str(image_path))
+
+        # Apply operation
+        result = operation(image)
+
+        result_path = images_dir / image_path.name
+        cv2.imwrite(str(result_path), result)
+
+        typer.echo(f"{operation_name} image saved to {result_path}")
+
+    typer.echo("Done!")
+
+
 @app.command(help="Rotate dataset images by a given angle (in degrees).")
 def rotate(
     source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
     angle: float = typer.Option(
-        90,
-        help="Rotation angle in degrees. Positive values mean counter-clockwise rotation.",
+        90, help="Rotation angle in degrees. Positive values mean counter-clockwise rotation."
     ),
 ):
-    # Create output directories
-    images_dir = Path(target_directory)
-    images_dir.mkdir(parents=True, exist_ok=True)
-
-    # Process each image in the directory
-    for image_path in tqdm(list(Path(source_directory).glob("*.jpg"))):
-        # Read BGR sample image
-        image = cv2.imread(str(image_path))
-
-        # Apply rotation
-        result = imutils.rotate_bound(image, angle)
-
-        # Save the rotated image
-        result_path = images_dir / image_path.name
-        cv2.imwrite(str(result_path), result)
-
-        typer.echo(f"Rotated image saved to {result_path}")
-
-    typer.echo("Done!")
+    process_images(
+        source_directory, target_directory, lambda img: imutils.rotate_bound(img, angle), "Rotated"
+    )
 
 
 @app.command(help="Resize dataset images to a given width and height.")
@@ -48,25 +49,25 @@ def resize(
     width: int = typer.Option(400, help="Target width in pixels."),
     height: int = typer.Option(400, help="Target height in pixels."),
 ):
-    # Create output directories
-    images_dir = Path(target_directory)
-    images_dir.mkdir(parents=True, exist_ok=True)
+    process_images(
+        source_directory,
+        target_directory,
+        lambda img: imutils.resize(img, width=width, height=height),
+        "Resized",
+    )
 
-    # Process each image in the directory
-    for image_path in tqdm(list(Path(source_directory).glob("*.jpg"))):
-        # Read BGR sample image
-        image = cv2.imread(str(image_path))
 
-        # Apply resizing
-        result = imutils.resize(image, width=width, height=height)
-
-        # Save the resized image
-        result_path = images_dir / image_path.name
-        cv2.imwrite(str(result_path), result)
-
-        typer.echo(f"Resized image saved to {result_path}")
-
-    typer.echo("Done!")
+@app.command(help="Convert dataset images to grayscale.")
+def grayscale(
+    source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
+    target_directory: Path = typer.Argument(..., help="Path to the output directory."),
+):
+    process_images(
+        source_directory,
+        target_directory,
+        lambda img: cv2.cvtColor(img, cv2.COLOR_BGR2GRAY),
+        "Grayscale",
+    )
 
 
 @app.command(help="Create dataset for YOLO object detection.")
@@ -137,8 +138,11 @@ class UltralyticsDataset:
         images_list = list(Path(self.images_dir).glob("*"))
         num_train_images = int(len(images_list) * train_ratio)
 
+        print(f"Creating dataset in {self.output_dir}...")
+        print(f"{len(images_list)} images found in {self.images_dir}.")
+        print(f"Creating training and validation sets with a {train_ratio} ratio.")
         print(
-            f"Found {len(images_list)} images. Using {num_train_images} for training and {len(images_list) - num_train_images} for validation."
+            f"Using {num_train_images} for training and {len(images_list) - num_train_images} for validation."
         )
 
         # Detect labels file extension
@@ -174,7 +178,7 @@ class UltralyticsDataset:
             "path": f"../{self.output_dir}",  # dataset root dir
             "train": "train",  # train images (relative to 'path')
             "val": "val",  # val images (relative to 'path')
-            "names": {0: "Fingertip"},
+            "names": {0: "fingertip"},
         }
 
         with open(self.output_dir / f"{self.output_dir}.yaml", "w", encoding="utf-8") as yaml_file:

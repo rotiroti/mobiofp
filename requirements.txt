@@ -15,4 +15,3 @@ tqdm
 pandas
 seaborn
 typer
-superpoint_superglue_deployment

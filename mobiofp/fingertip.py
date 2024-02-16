@@ -10,14 +10,9 @@ from tqdm import tqdm
 from ultralytics import YOLO, settings
 
 from .segmentation import Segment
-from .utils import (
-    crop_image,
-    enhance_fingerprint,
-    extract_roi,
-    find_largest_connected_component,
-    quality_scores,
-    to_fingerprint,
-)
+from .utils import (crop_image, extract_roi, fingerprint_enhancement,
+                    fingerprint_mapping, fingertip_enhancement,
+                    post_process_mask, quality_scores)
 
 app = typer.Typer()
 
@@ -35,8 +30,10 @@ def segment(
     # Create output directories
     images_dir = Path(target_directory) / "fingertips"
     masks_dir = Path(target_directory) / "masks"
+    bbox_dir = Path(target_directory) / "bbox"
     images_dir.mkdir(parents=True, exist_ok=True)
     masks_dir.mkdir(parents=True, exist_ok=True)
+    bbox_dir.mkdir(parents=True, exist_ok=True)
 
     # Process each image in the directory
     for image_path in tqdm(list(Path(source_directory).glob("*.jpg"))):
@@ -45,19 +42,17 @@ def segment(
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         # Predict mask
-        mask = segmenter.predict(image)
-
-        # Fingertip ROI extraction
-        bbox = extract_roi(mask)
+        result = segmenter.predict(image)
+        bbox = extract_roi(result)
         fingertip = crop_image(image, bbox)
-        fingertip_mask = crop_image(mask, bbox)
+        fingertip_mask = crop_image(result, bbox)
 
         # Normalize final image and mask
         fingertip = cv2.normalize(fingertip, None, 0, 255, cv2.NORM_MINMAX)
         fingertip = cv2.cvtColor(fingertip, cv2.COLOR_RGB2BGR)
         fingertip_mask = fingertip_mask * 255
 
-        # Save fingertip and mask
+        # Save fingertip, mask and bbox
         fingertip_path = images_dir / image_path.name
         cv2.imwrite(str(fingertip_path), fingertip)
         typer.echo(f"Fingertip image saved to {fingertip_path}")
@@ -65,6 +60,11 @@ def segment(
         fingertip_mask_path = masks_dir / image_path.with_suffix(".png").name
         cv2.imwrite(str(fingertip_mask_path), fingertip_mask)
         typer.echo(f"Fingertip mask saved to {fingertip_mask_path}")
+
+        bbox_array = np.array(bbox).reshape(1, 4)
+        fingertip_bbox_path = bbox_dir / image_path.with_suffix(".txt").name
+        np.savetxt(str(fingertip_bbox_path), bbox_array, fmt="%d")
+        typer.echo(f"Fingertip bbox saved to {fingertip_bbox_path}")
 
     typer.echo("Done!")
 
@@ -134,13 +134,7 @@ def background(
         mask = remove(image, only_mask=True, session=rembg_session)
 
         # Post-process mask
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=2)
-        mask = cv2.GaussianBlur(mask, (5, 5), sigmaX=2, sigmaY=2, borderType=cv2.BORDER_DEFAULT)
-        mask = np.where(mask < 127, 0, 255).astype(np.uint8)
-
-        # Find the largest connected component
-        mask = find_largest_connected_component(mask)
+        mask = post_process_mask(mask)
 
         # Save fingertip mask
         mask_path = masks_dir / image_path.with_suffix(".png").name
@@ -181,10 +175,7 @@ def enhance(
             f"Threshold: {coverage_thresh}; Image: {image_path}, Binary Mask Coverage: {coverage:.2f}"
         )
 
-        # Normalize, bilateral filter, and CLAHE
-        fingertip = cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX)
-        fingertip = cv2.bilateralFilter(image, 7, 50, 50)
-        fingertip = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(image)
+        fingertip = fingertip_enhancement(image)
 
         # Save enhanced fingertip without background
         fingertip = cv2.bitwise_and(fingertip, fingertip, mask=mask)
@@ -207,23 +198,8 @@ def convert(
 
     for image_path in tqdm(list(Path(enhancement_directory).glob("*.jpg"))):
         fingertip = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
-
-        # Fingertip Binarization
-        binary = cv2.adaptiveThreshold(
-            fingertip, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 21, 2
-        )
-
-        # Contactless (fingerphoto fingertip) to contact mapping (fingerprint)
-        try:
-            fingerprint = to_fingerprint(binary)
-        except Exception as e:
-            typer.echo(f"Error converting fingerphoto to fingerprint: {e}")
-            typer.echo(f"Skipping {image_path}")
-            continue
-
-        # Enhance fingerprint
-        fingerprint = enhance_fingerprint(fingerprint)
-        fingerprint = fingerprint.astype("uint8")
+        fingerprint = fingerprint_mapping(fingertip)
+        fingerprint = fingerprint_enhancement(fingerprint)
 
         # Save enhanced fingerprint
         fingerprint_path = fingerprint_dir / image_path.with_suffix(".png").name
@@ -236,7 +212,7 @@ def convert(
 @app.command(help="Fingertip Image-Quality Assessment Report.")
 def iqa(
     fingertips_directory: Path = typer.Argument(
-        ..., help="Path to the enhanced fingertip images directory."
+        ..., help="Path to the fingertip images directory."
     ),
     mask_directory: Path = typer.Argument(..., help="Path to the fingertip masks directory."),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),

@@ -6,7 +6,7 @@ import pandas as pd
 import typer
 from tqdm import tqdm
 
-from .utils import imkpts
+from mobiofp.utils import imkpts
 
 app = typer.Typer()
 

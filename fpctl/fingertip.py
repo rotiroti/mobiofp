@@ -9,8 +9,8 @@ from rembg import new_session, remove
 from tqdm import tqdm
 from ultralytics import YOLO, settings
 
-from .segmentation import Segment
-from .utils import (
+from mobiofp.segmentation import Segment
+from mobiofp.utils import (
     crop_image,
     extract_roi,
     fingerprint_enhancement,

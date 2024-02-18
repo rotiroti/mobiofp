@@ -74,8 +74,9 @@ def crop_image(image: np.ndarray, roi: tuple[int, int, int, int]) -> np.ndarray:
 
 
 def post_process_mask(mask: np.ndarray) -> np.ndarray:
-    # Apply morphological operation and Gaussian blur
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+
+    # Apply morphological operation and Gaussian blur
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=2)
     mask = cv2.GaussianBlur(mask, (5, 5), sigmaX=2, sigmaY=2, borderType=cv2.BORDER_DEFAULT)
     mask = np.where(mask < 127, 0, 255).astype(np.uint8)
@@ -158,7 +159,7 @@ def quality_scores(image: np.ndarray, mask: np.ndarray) -> tuple[float, float, f
     return sharpness, contrast, coverage
 
 
-def fingertip_enhancement(image):
+def fingertip_enhancement(image: np.ndarray) -> np.ndarray:
     # Convert to grayscale
     if len(image.shape) > 2:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -171,17 +172,21 @@ def fingertip_enhancement(image):
     return image
 
 
+def fingertip_thresholding(image: np.ndarray) -> np.ndarray:
+    return cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 21, 2)
+
+
 """
 Fingerprint Processing Functions
 """
 _sigma_conv = (3.0 / 2.0) / ((6 * math.log(10)) ** 0.5)
 
 
-def _gabor_sigma(ridge_period):
+def _gabor_sigma(ridge_period: float):
     return _sigma_conv * ridge_period
 
 
-def _gabor_size(ridge_period):
+def _gabor_size(ridge_period: float):
     """
     Calculate the size of the Gabor filter based on the ridge period.
 
@@ -207,7 +212,7 @@ def _gabor_size(ridge_period):
     return (p, p)
 
 
-def _gabor_kernel(period, orientation):
+def _gabor_kernel(period: float, orientation: float) -> np.ndarray:
     """
     Generate a Gabor filter kernel.
 
@@ -321,11 +326,8 @@ def _to_fingerprint(image: np.array, width: int = 400) -> np.array:
 
 @memory.cache
 def fingerprint_mapping(image: np.ndarray) -> np.ndarray:
-    # Fingertip Adaptive Thresholding
-    binary = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 21, 2)
-
     try:
-        fingerprint = _to_fingerprint(binary)
+        fingerprint = _to_fingerprint(image)
 
         return fingerprint
     except Exception as e:

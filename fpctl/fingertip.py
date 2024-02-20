@@ -129,7 +129,7 @@ def background(
     masks_dir.mkdir(parents=True, exist_ok=True)
 
     # Create a new session using U-NET model
-    rembg_session = new_session("isnet-general-use")
+    rembg_session = new_session("u2net")
 
     for image_path in tqdm(list(Path(fingertips_directory).glob("*.jpg"))):
         # Read RGB sample image

@@ -1,20 +1,9 @@
 from .segmentation import DataGenerator, Segment
-from .utils import (
-    contrast_score,
-    coverage_percentage,
-    crop_image,
-    extract_roi,
-    fingerprint_enhancement,
-    fingerprint_mapping,
-    fingertip_enhancement,
-    fingertip_thresholding,
-    imkpts,
-    orb_bf_matcher,
-    orb_flann_matcher,
-    post_process_mask,
-    quality_scores,
-    sharpness_score,
-)
+from .utils import (contrast_score, coverage_percentage, crop_image,
+                    extract_roi, fingerprint_enhancement, fingerprint_mapping,
+                    fingertip_enhancement, fingertip_thresholding, imkpts,
+                    orb_bf_matcher, orb_flann_matcher, post_process_mask,
+                    quality_scores, sharpness_score)
 
 __version__ = "0.1.0"
 __all__ = (

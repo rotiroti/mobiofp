@@ -16,6 +16,7 @@ from mobiofp.utils import (
     fingerprint_enhancement,
     fingerprint_mapping,
     fingertip_enhancement,
+    fingertip_thresholding,
     post_process_mask,
     quality_scores,
 )
@@ -23,11 +24,12 @@ from mobiofp.utils import (
 app = typer.Typer()
 
 
-@app.command(help="Fingertip Segmentation.")
+@app.command(help="Run fingertip segmentation using a custom U-Net model.")
 def segment(
     source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
-    model_file: Path = typer.Argument(..., help="Path to the model checkpoint for segmentation."),
+    model_file: Path = typer.Argument(..., help="Path to the custom custom U-Net model weights."),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
+    factor: float = typer.Option(1.0, help="Region of interest factor."),
 ):
     # Load segmentation model
     segmenter = Segment()
@@ -49,7 +51,7 @@ def segment(
 
         # Predict mask
         result = segmenter.predict(image)
-        bbox = extract_roi(result)
+        bbox = extract_roi(result, factor)
         fingertip = crop_image(image, bbox)
         fingertip_mask = crop_image(result, bbox)
 
@@ -75,10 +77,10 @@ def segment(
     typer.echo("Done!")
 
 
-@app.command(help="Fingertip Detection.")
+@app.command(help="Run fingertip detection using a custom YOLOv8n model.")
 def detect(
     source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
-    model_file: Path = typer.Argument(..., help="Path to the model checkpoint for detection."),
+    model_file: Path = typer.Argument(..., help="Path to the custom YOLOv8n model weights."),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
 ):
     # Create output directories
@@ -117,26 +119,24 @@ def detect(
     typer.echo("Done!")
 
 
-@app.command(help="Fingertip Background Removal (mandatory step for detection).")
-def background(
-    fingertips_directory: Path = typer.Argument(
-        ..., help="Path to the fingertip detection images directory."
-    ),
+@app.command(help="Generate binary mask through background subtraction.")
+def subtract(
+    source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
 ):
     # Create output directories
     masks_dir = Path(target_directory) / "masks"
     masks_dir.mkdir(parents=True, exist_ok=True)
 
-    # Create a new session using U-NET model
+    # Create a new session using U2NET model
     rembg_session = new_session("u2net")
 
-    for image_path in tqdm(list(Path(fingertips_directory).glob("*.jpg"))):
+    for image_path in tqdm(list(Path(source_directory).glob("*.jpg"))):
         # Read RGB sample image
         image = cv2.imread(str(image_path))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        # Remove background from the image
+        # Subtract background from the image
         mask = remove(image, only_mask=True, session=rembg_session)
 
         # Post-process mask
@@ -149,77 +149,9 @@ def background(
 
     typer.echo("Done!")
 
-
-@app.command(help="Fingertip Enhancement according to Binary Mask Coverage percentage.")
-def enhance(
-    fingertips_directory: Path = typer.Argument(
-        ..., help="Path to the fingertip images directory."
-    ),
-    mask_directory: Path = typer.Argument(..., help="Path to the fingertip masks directory."),
-    target_directory: Path = typer.Argument(..., help="Path to the output directory."),
-    coverage_thresh: float = typer.Option(65.0, help="Binary Mask Coverage percentage threshold."),
-):
-    # Create output directories
-    images_dir = Path(target_directory) / "enhancement"
-    images_dir.mkdir(parents=True, exist_ok=True)
-
-    image_paths = list(Path(fingertips_directory).glob("*.jpg"))
-    for image_path in tqdm(image_paths):
-        mask_path = Path(mask_directory) / image_path.with_suffix(".png").name
-
-        # Read fingertip and mask images (Grayscale)
-        image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
-        mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
-
-        _, _, coverage = quality_scores(image, mask)
-
-        if coverage < coverage_thresh:
-            typer.echo(f"Skipping {image_path} due to low ({coverage:.2f}) coverage percentage.")
-            continue
-
-        typer.echo(
-            f"Threshold: {coverage_thresh}; Image: {image_path}, Binary Mask Coverage: {coverage:.2f}"
-        )
-
-        fingertip = fingertip_enhancement(image)
-
-        # Save enhanced fingertip without background
-        fingertip = cv2.bitwise_and(fingertip, fingertip, mask=mask)
-        fingertip_path = images_dir / image_path.name
-        cv2.imwrite(str(fingertip_path), fingertip)
-        typer.echo(f"Enhanced fingertip image saved to {fingertip_path}")
-
-    typer.echo("Done!")
-
-
-@app.command(help="Convert fingertip into fingerprint.")
-def convert(
-    enhancement_directory: Path = typer.Argument(
-        ..., help="Path to the enhanced fingertip images directory."
-    ),
-    target_directory: Path = typer.Argument(..., help="Path to the output directory."),
-):
-    fingerprint_dir = Path(target_directory) / "mapping"
-    fingerprint_dir.mkdir(parents=True, exist_ok=True)
-
-    for image_path in tqdm(list(Path(enhancement_directory).glob("*.jpg"))):
-        fingertip = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
-        fingerprint = fingerprint_mapping(fingertip)
-        fingerprint = fingerprint_enhancement(fingerprint)
-
-        # Save enhanced fingerprint
-        fingerprint_path = fingerprint_dir / image_path.with_suffix(".png").name
-        cv2.imwrite(str(fingerprint_path), fingerprint)
-        typer.echo(f"Contactless to contact mapping saved to {fingerprint_path}")
-
-    typer.echo("Done!")
-
-
-@app.command(help="Fingertip Image-Quality Assessment Report.")
-def iqa(
-    fingertips_directory: Path = typer.Argument(
-        ..., help="Path to the fingertip images directory."
-    ),
+@app.command(help="Generate a fingertip image quality assessment report.")
+def score(
+    source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
     mask_directory: Path = typer.Argument(..., help="Path to the fingertip masks directory."),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
     report_file: Path = typer.Option("quality_scores.csv", help="Path to the output report file."),
@@ -238,7 +170,7 @@ def iqa(
         writer.writeheader()
 
         # Process each image in the directory
-        image_paths = list(Path(fingertips_directory).glob("*.jpg"))
+        image_paths = list(Path(source_directory).glob("*.jpg"))
         for image_path in tqdm(image_paths):
             mask_path = Path(mask_directory) / image_path.with_suffix(".png").name
 
@@ -264,3 +196,83 @@ def iqa(
             )
 
     typer.echo(f"Quality scores saved to {report_file_path}")
+
+@app.command(help="Run fingertip enhancement (bilateral filter and CLAHE).")
+def enhance(
+    source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
+    mask_directory: Path = typer.Argument(..., help="Path to the fingertip masks directory."),
+    target_directory: Path = typer.Argument(..., help="Path to the output directory."),
+    area: float = typer.Option(65.0, help="Binary Mask Coverage percentage threshold."),
+):
+    # Create output directories
+    images_dir = Path(target_directory) / "enhancement"
+    images_dir.mkdir(parents=True, exist_ok=True)
+
+    image_paths = list(Path(source_directory).glob("*.jpg"))
+    for image_path in tqdm(image_paths):
+        mask_path = Path(mask_directory) / image_path.with_suffix(".png").name
+
+        # Read fingertip and mask images (Grayscale)
+        image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+        mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
+
+        _, _, coverage = quality_scores(image, mask)
+
+        if coverage < area:
+            typer.echo(f"Skipping {image_path} due to low ({coverage:.2f}) coverage percentage.")
+            continue
+
+        typer.echo(
+            f"Threshold: {area}; Image: {image_path}, Binary Mask Coverage: {coverage:.2f}"
+        )
+
+        fingertip = fingertip_enhancement(image)
+
+        # Save enhanced fingertip without background
+        fingertip = cv2.bitwise_and(fingertip, fingertip, mask=mask)
+        fingertip_path = images_dir / image_path.name
+        cv2.imwrite(str(fingertip_path), fingertip)
+        typer.echo(f"Enhanced fingertip image saved to {fingertip_path}")
+
+    typer.echo("Done!")
+
+@app.command(help="Run mean adaptive thresholding.")
+def binarize(
+    source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
+    target_directory: Path = typer.Argument(..., help="Path to the output directory."),
+    block_size: int = typer.Option(11, help="Block size."),
+):
+    binarized_dir = Path(target_directory) / "binarized"
+    binarized_dir.mkdir(parents=True, exist_ok=True)
+
+    for image_path in tqdm(list(Path(source_directory).glob("*.jpg"))):
+        image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+        binarized = fingertip_thresholding(image, block_size)
+
+        # Save binarized fingertip
+        binarized_path = binarized_dir / image_path.with_suffix(".png").name
+        cv2.imwrite(str(binarized_path), binarized)
+        typer.echo(f"Binarized fingertip image saved to {binarized_path}")
+
+    typer.echo("Done!")
+
+@app.command(help="Transform fingertip images into fingerprint images.")
+def convert(
+    source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
+    target_directory: Path = typer.Argument(..., help="Path to the output directory."),
+):
+    fingerprint_dir = Path(target_directory) / "mapping"
+    fingerprint_dir.mkdir(parents=True, exist_ok=True)
+
+    for image_path in tqdm(list(Path(source_directory).glob("*.png"))):
+        fingertip = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+        fingerprint = fingerprint_mapping(fingertip)
+        fingerprint = fingerprint_enhancement(fingerprint)
+
+        # Save enhanced fingerprint
+        fingerprint_path = fingerprint_dir / image_path.with_suffix(".png").name
+        cv2.imwrite(str(fingerprint_path), fingerprint)
+        typer.echo(f"Contactless to contact mapping saved to {fingerprint_path}")
+
+    typer.echo("Done!")
+

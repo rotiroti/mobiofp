@@ -172,8 +172,8 @@ def fingertip_enhancement(image: np.ndarray) -> np.ndarray:
     return image
 
 
-def fingertip_thresholding(image: np.ndarray) -> np.ndarray:
-    return cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 21, 2)
+def fingertip_thresholding(image: np.ndarray, blockSize=11) -> np.ndarray:
+    return cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, blockSize, 2)
 
 
 """

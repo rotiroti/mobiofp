@@ -42,23 +42,22 @@ def rotate(
     )
 
 
-@app.command(help="Resize dataset images to a given width and height.")
+@app.command(help="Resize dataset images to a given width.")
 def resize(
     source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
     width: int = typer.Option(400, help="Target width in pixels."),
-    height: int = typer.Option(400, help="Target height in pixels."),
 ):
     process_images(
         source_directory,
         target_directory,
-        lambda img: imutils.resize(img, width=width, height=height),
+        lambda img: imutils.resize(img, width=width),
         "Resized",
     )
 
 
 @app.command(help="Convert dataset images to grayscale.")
-def grayscale(
+def gray(
     source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
 ):

@@ -11,7 +11,7 @@ from mobiofp.utils import imkpts
 app = typer.Typer()
 
 
-@app.command(help="Extract features using OpenCV ORB.")
+@app.command(help="Run fingerprint feature extraction using ORB.")
 def extract(
     mapping_directory: Path = typer.Argument(..., help="Path to the input mapping directory."),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),

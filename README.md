@@ -15,15 +15,53 @@ The requirements are listed in the `requirements.txt` file. Here's a summary:
 
 ## Installation
 
-It is strongly reccomended creating a new virtual environment to isolate project dependencies and avoid conflicts versions with system-wide installations.
-You can use tools like `venv` or `conda`.
+To install the `mobiofp` package and the `fpctl` CLI application, follow these steps:
+
+1. Clone the repository to your local machine.
+2. Navigate to the project directory.
+3. Create a new virtual environment to isolate project dependencies and avoid conflicting versions with system-wide installations. You can use tools like `venv`:
+```
+$ python -m venv new_environment
+$ source ./new_environment/bin/activate
+```
+ or `conda`
+```
+$ conda create --name new_environment
+$ conda activate new_environment
+```
+4. Install the required dependencies:
 
 ```
-$ python -m venv /path/to/new/virtual/environment
+$ pip install .
 ```
 
+or if running on **Apple M1 and M2** chipsets
+
 ```
-$ conda create --name environment
+$ pip install .
+$ pip install tensorflow-metal
+```
+5. Verify the installation by running the `fpctl` CLI application:
+
+```
+$ fpctl --help
+
+Usage: fpctl [OPTIONS] COMMAND [ARGS]...
+
+  Fingerphoto Recognition Command Line Interface.
+
+Options:
+  --install-completion [bash|zsh|fish|powershell|pwsh]
+                                  Install completion for the specified shell.
+  --show-completion [bash|zsh|fish|powershell|pwsh]
+                                  Show completion for the specified shell, to
+                                  copy it or customize the installation.
+  --help                          Show this message and exit.
+
+Commands:
+  dataset    Dataset Commands
+  feature    Feature Commands
+  fingertip  Fingertip Commands
 ```
 
 
@@ -54,54 +92,68 @@ $ conda create --name environment
 |---|---|---|---|
 | Fingertip Semantic Segmentation (U-Net)  | amd64 | fingertip-seg-amd64.h5 | [**Download Link**](https://drive.google.com/file/d/1TLClup2s3fgkwNhXTjjVRfEQwAK18sKt) |
 | Fingertip Semantic Segmentation (U-Net) | arm64 | fingertip-seg-arm64.h5  | [**Download Link**](https://drive.google.com/file/d/1lBEUzFibKANLcK1fiyfCP0ZUTCAP4_60) |
-| Fingertip Object Detection (YOLOv8n)  | amd64 | fingertip-obj-amd64.pt  | [**Download Link**](https://drive.google.com/file/d/1ia2Vkf4UfRI6Q_SIV1k30_WiorrlRd3K) |
+| Fingertip Object Detection (YOLOv8n)  | amd64 | fingertip-obj-amd64.pt  | [**Download Link**](https://drive.google.com/file/d/1THsT9OcTbjl_Qadw_4WqvdOEoJxVYuDW) |
 | Fingertip Object Detection (YOLOv8n)  | arm64 | fingertip-obj-arm64.pt  | [**Download Link**](https://drive.google.com/file/d/1ia2Vkf4UfRI6Q_SIV1k30_WiorrlRd3K) |
 
 ## Fingerphoto Control CLI Application (fpctl)
 
-### Dataset command
+### Dataset Commands
 
 ```
+$ fpctl dataset --help
+
 Usage: fpctl dataset [OPTIONS] COMMAND [ARGS]...
+
+  Dataset Commands
 
 Options:
   --help  Show this message and exit.
 
 Commands:
-  create     Create dataset for YOLO object detection.
-  grayscale  Convert dataset images to grayscale.
-  resize     Resize dataset images to a given width.
-  rotate     Rotate dataset images by a given angle (in degrees).
-  ```
+  create  Create dataset for YOLO object detection.
+  gray    Convert dataset images to grayscale.
+  resize  Resize dataset images to a given width.
+  rotate  Rotate dataset images by a given angle (in degrees).
+```
+
+#### Convert dataset images to grayscale.
 
 ```
-$ fpctl dataset grayscale ./data/raw/samples ./data/processed/samplesGray
+$ fpctl dataset gray ./data/raw/samples ./data/processed/samplesGray
 ```
+
+#### Resize dataset images to 640 pixels
 
 ```
 $ fpctl dataset resize --width=640 ./data/raw/samples ./data/processed/samples640w
 ```
 
+#### Rotate dataset images by an angle of 90 degrees (clockwise)
 ```
 $ fpctl dataset rotate --angle=90 ./data/raw/samples ./data/processed/samples90d
 ```
 
 
-### Fingertip command
+### Fingertip Commands
 
 ```
+$ fpctl fingertip --help
+
 Usage: fpctl fingertip [OPTIONS] COMMAND [ARGS]...
+
+  Fingertip Commands
 
 Options:
   --help  Show this message and exit.
 
 Commands:
-  background  Fingertip Background Removal (mandatory step for detection).
-  convert     Convert fingertip into fingerprint.
-  detect      Fingertip Detection.
-  enhance     Fingertip Enhancement according to Binary Mask Coverage...
-  iqa         Fingertip Image-Quality Assessment Report.
-  segment     Fingertip Segmentation.
+  binarize  Run mean adaptive thresholding.
+  convert   Transform fingertip images into fingerprint images.
+  detect    Run fingertip detection using a custom YOLOv8n model.
+  enhance   Run fingertip enhancement (bilateral filter and CLAHE).
+  score     Generate a fingertip image quality assessment report.
+  segment   Run fingertip segmentation using a custom U-Net model.
+  subtract  Generate binary mask through background subtraction.
 ```
 
 #### Generate fingertip images, masks, and bounding box annotations using the custom-trained semantic segmentation model.
@@ -137,7 +189,7 @@ Done!
 ```
 
 ```
-$ fpctl fingertip background ./data/processed/detection/fingertips ./data/processed/detection
+$ fpctl fingertip subtract ./data/processed/detection/fingertips ./data/processed/detection
 ...
 ...
 Fingertip mask saved to data/processed/detection/masks/9_i_1_w_1.png
@@ -158,7 +210,7 @@ Done!
 #### Perform figertip enhancement (by setting a different binary mask coverage threshold = 75%)
 
 ```
-$ fpctl fingertip enhance --coverage-thresh=75 ./data/processed/detection/fingertips ./data/processed/detection/masks ./data/processed/detection
+$ fpctl fingertip enhance --area=75 ./data/processed/detection/fingertips ./data/processed/detection/masks ./data/processed/detection
 ...
 Skipping data/processed/detection/fingertips/9_i_1_w_1.jpg due to low (74.34) coverage percentage.
 Threshold: 75.0; Image: data/processed/detection/fingertips/9_o_2_n_1.jpg, Binary Mask Coverage: 78.14
@@ -166,18 +218,20 @@ Threshold: 75.0; Image: data/processed/detection/fingertips/9_o_2_n_1.jpg, Binar
 Done!
 ```
 
-
-
-### Feature command
+### Feature Commands
 
 ```
+$ fpctl feature --help
+
 Usage: fpctl feature [OPTIONS] COMMAND [ARGS]...
+
+  Feature Commands
 
 Options:
   --help  Show this message and exit.
 
 Commands:
-  extract  Extract features using OpenCV ORB.
+  extract  Run fingerprint feature extraction using ORB.
   info     Show information about the features.
 ```
 

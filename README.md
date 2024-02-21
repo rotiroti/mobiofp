@@ -202,7 +202,7 @@ Done!
 ```
 $ fpctl fingertip enhance ./data/processed/detection/fingertips ./data/processed/detection/masks ./data/processed/detection
 ...
-Threshold: 75.0; Image: data/processed/detection/fingertips/9_i_1_w_1.jpg, Binary Mask Coverage: 74.34
+Threshold: 65.0; Image: data/processed/detection/fingertips/9_i_1_w_1.jpg, Binary Mask Coverage: 74.34
 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 8/8 [00:02<00:00,  2.88it/s]
 Done!
 ```

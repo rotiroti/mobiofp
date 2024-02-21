@@ -167,3 +167,6 @@ cython_debug/
 /notebooks/cache
 *.h5
 *.pt
+fingertip*
+*.zip
+runs

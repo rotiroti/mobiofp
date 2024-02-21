@@ -160,7 +160,6 @@ def quality_scores(image: np.ndarray, mask: np.ndarray) -> tuple[float, float, f
 
 
 def fingertip_enhancement(image: np.ndarray) -> np.ndarray:
-    # Convert to grayscale
     if len(image.shape) > 2:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -173,7 +172,9 @@ def fingertip_enhancement(image: np.ndarray) -> np.ndarray:
 
 
 def fingertip_thresholding(image: np.ndarray, blockSize=11) -> np.ndarray:
-    return cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, blockSize, 2)
+    return cv2.adaptiveThreshold(
+        image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, blockSize, 2
+    )
 
 
 """

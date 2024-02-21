@@ -149,6 +149,7 @@ def subtract(
 
     typer.echo("Done!")
 
+
 @app.command(help="Generate a fingertip image quality assessment report.")
 def score(
     source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
@@ -197,6 +198,7 @@ def score(
 
     typer.echo(f"Quality scores saved to {report_file_path}")
 
+
 @app.command(help="Run fingertip enhancement (bilateral filter and CLAHE).")
 def enhance(
     source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
@@ -222,9 +224,7 @@ def enhance(
             typer.echo(f"Skipping {image_path} due to low ({coverage:.2f}) coverage percentage.")
             continue
 
-        typer.echo(
-            f"Threshold: {area}; Image: {image_path}, Binary Mask Coverage: {coverage:.2f}"
-        )
+        typer.echo(f"Threshold: {area}; Image: {image_path}, Binary Mask Coverage: {coverage:.2f}")
 
         fingertip = fingertip_enhancement(image)
 
@@ -235,6 +235,7 @@ def enhance(
         typer.echo(f"Enhanced fingertip image saved to {fingertip_path}")
 
     typer.echo("Done!")
+
 
 @app.command(help="Run mean adaptive thresholding.")
 def binarize(
@@ -256,6 +257,7 @@ def binarize(
 
     typer.echo("Done!")
 
+
 @app.command(help="Transform fingertip images into fingerprint images.")
 def convert(
     source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
@@ -275,4 +277,3 @@ def convert(
         typer.echo(f"Contactless to contact mapping saved to {fingerprint_path}")
 
     typer.echo("Done!")
-

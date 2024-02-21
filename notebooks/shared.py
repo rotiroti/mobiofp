@@ -47,6 +47,24 @@ def read_images(
     return images, images_titles
 
 
+def save_images(images, titles, target_directory, file_extesion="jpg", mask=False):
+    """
+    Save images to a directory.
+    """
+    target_directory = Path(target_directory)
+    target_directory.mkdir(parents=True, exist_ok=True)
+
+    for img, title in zip(images, titles):
+        img_path = target_directory / f"{title}.{file_extesion}"
+
+        if not mask:
+            cv2.imwrite(str(img_path), img)
+        else:
+            cv2.imwrite(str(img_path), img * 255)
+
+    print(f"Images saved to {target_directory}")
+
+
 def show_images(
     images, titles, cmap="gray", show_axis=False, fig_size=10, sup_title=None, limit=10
 ):

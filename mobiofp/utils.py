@@ -13,39 +13,6 @@ Fingertip Processing Functions
 """
 
 
-def _find_largest_connected_component(mask: np.ndarray) -> np.array:
-    """
-    Finds the largest connected component in a binary mask.
-    Args:
-        mask: Binary mask containing connected components.
-    Returns:
-        Binary mask with only the largest connected component.
-    """
-    # Find connected components in the mask
-    _, labels, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
-
-    # Find the label of the largest connected component (excluding the background)
-    largest_component_label = np.argmax(stats[1:, cv2.CC_STAT_AREA]) + 1
-
-    # Create a binary mask where the largest connected component is white and everything else is black
-    largest_component_mask = np.where(labels == largest_component_label, 255, 0).astype(np.uint8)
-
-    return largest_component_mask
-
-def post_process_mask(mask: np.ndarray) -> np.ndarray:
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-
-    # Apply morphological operation and Gaussian blur
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=2)
-    mask = cv2.GaussianBlur(mask, (5, 5), sigmaX=2, sigmaY=2, borderType=cv2.BORDER_DEFAULT)
-    mask = np.where(mask < 127, 0, 255).astype(np.uint8)
-
-    # Find the largest connected component
-    mask = _find_largest_connected_component(mask)
-
-    return mask
-
-
 def sharpness_score(image: np.ndarray) -> float:
     """
     Calculates the sharpness score of an image using the Laplacian method.

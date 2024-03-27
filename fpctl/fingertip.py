@@ -5,17 +5,16 @@ from pathlib import Path
 import cv2
 import numpy as np
 import typer
-from rembg import new_session, remove
 from tqdm import tqdm
 from ultralytics import YOLO, settings
 
+from mobiofp.background import BackgroundRemoval
 from mobiofp.segmentation import Segment
 from mobiofp.utils import (
     fingerprint_enhancement,
     fingerprint_mapping,
     fingertip_enhancement,
     fingertip_thresholding,
-    post_process_mask,
     quality_scores,
 )
 
@@ -121,24 +120,21 @@ def detect(
 def subtract(
     source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
+    rembg_model: str = typer.Option("u2net", help="Rembg model to use"),
 ):
     # Create output directories
     masks_dir = Path(target_directory) / "masks"
     masks_dir.mkdir(parents=True, exist_ok=True)
 
-    # Create a new session using U2NET model
-    rembg_session = new_session("u2net")
+    remover = BackgroundRemoval(session=rembg_model)
 
     for image_path in tqdm(list(Path(source_directory).glob("*.jpg"))):
         # Read RGB sample image
         image = cv2.imread(str(image_path))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        # Subtract background from the image
-        mask = remove(image, only_mask=True, session=rembg_session)
-
-        # Post-process mask
-        mask = post_process_mask(mask)
+        # Apply background removal
+        mask = remover.apply(image)
 
         # Save fingertip mask
         mask_path = masks_dir / image_path.with_suffix(".png").name

@@ -7,10 +7,8 @@ class BackgroundRemoval:
     def __init__(self, session="u2net"):
         self.session = new_session(session)
 
-    def apply(self, image, only_mask=True, post_process_mask=True):
-        mask = remove(
-            image, session=self.session, only_mask=only_mask, post_process_mask=post_process_mask
-        )
+    def apply(self, image):
+        mask = remove(image, session=self.session, only_mask=True, post_process_mask=True)
 
         # Ensure only the largest connected component is returned
         mask = self.__find_largest_connected_component(mask)

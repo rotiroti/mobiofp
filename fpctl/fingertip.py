@@ -10,10 +10,14 @@ from tqdm import tqdm
 from ultralytics import YOLO, settings
 
 from mobiofp.segmentation import Segment
-from mobiofp.utils import (crop_image, extract_roi, fingerprint_enhancement,
-                           fingerprint_mapping, fingertip_enhancement,
-                           fingertip_thresholding, post_process_mask,
-                           quality_scores)
+from mobiofp.utils import (
+    fingerprint_enhancement,
+    fingerprint_mapping,
+    fingertip_enhancement,
+    fingertip_thresholding,
+    post_process_mask,
+    quality_scores,
+)
 
 app = typer.Typer()
 
@@ -23,7 +27,7 @@ def segment(
     source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
     model_file: Path = typer.Argument(..., help="Path to the custom custom U-Net model weights."),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
-    factor: float = typer.Option(1.0, help="Region of interest factor."),
+    roi_factor: float = typer.Option(1.0, help="Region of interest factor."),
 ):
     # Load segmentation model
     segmenter = Segment()
@@ -45,9 +49,9 @@ def segment(
 
         # Predict mask
         result = segmenter.predict(image)
-        bbox = extract_roi(result, factor)
-        fingertip = crop_image(image, bbox)
-        fingertip_mask = crop_image(result, bbox)
+        bbox = segmenter.extract_roi(result, roi_factor)
+        fingertip = segmenter.crop_image(image, bbox)
+        fingertip_mask = segmenter.crop_image(result, bbox)
 
         # Normalize final image and mask
         fingertip = cv2.normalize(fingertip, None, 0, 255, cv2.NORM_MINMAX)

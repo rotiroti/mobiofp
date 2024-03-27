@@ -198,7 +198,15 @@ def enhance(
     source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
     mask_directory: Path = typer.Argument(..., help="Path to the fingertip masks directory."),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
-    area: float = typer.Option(65.0, help="Binary Mask Coverage percentage threshold."),
+    diameter: int = typer.Option(
+        10, help="Diameter of each pixel neighborhood that is used during filtering."
+    ),
+    sigma_color: int = typer.Option(75, help="Filter sigma in the color space."),
+    sigma_space: int = typer.Option(75, help="Filter sigma in the coordinate space."),
+    clip_limit: float = typer.Option(2.0, help="Threshold for contrast limiting."),
+    tile_grid_size: tuple[int, int] = typer.Option(
+        (8, 8), help="Size of grid for histogram equalization."
+    ),
 ):
     # Create output directories
     images_dir = Path(target_directory) / "enhancement"
@@ -212,19 +220,13 @@ def enhance(
         image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
         mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
 
-        _, _, coverage = quality_scores(image, mask)
-
-        if coverage < area:
-            typer.echo(f"Skipping {image_path} due to low ({coverage:.2f}) coverage percentage.")
-            continue
-
-        typer.echo(f"Threshold: {area}; Image: {image_path}, Binary Mask Coverage: {coverage:.2f}")
-
-        fingertip = fingertip_enhancement(image)
+        fingertip = fingertip_enhancement(
+            image, diameter, sigma_color, sigma_space, clip_limit, tile_grid_size
+        )
 
         # Save enhanced fingertip without background
         fingertip = cv2.bitwise_and(fingertip, fingertip, mask=mask)
-        fingertip_path = images_dir / image_path.name
+        fingertip_path = images_dir / image_path.with_suffix(".png").name
         cv2.imwrite(str(fingertip_path), fingertip)
         typer.echo(f"Enhanced fingertip image saved to {fingertip_path}")
 

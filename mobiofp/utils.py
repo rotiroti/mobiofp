@@ -85,14 +85,21 @@ def quality_scores(image: np.ndarray, mask: np.ndarray) -> tuple[float, float, f
     return sharpness, contrast, coverage
 
 
-def fingertip_enhancement(image: np.ndarray) -> np.ndarray:
+def fingertip_enhancement(
+    image: np.ndarray,
+    diameter=10,
+    sigma_color=75,
+    sigma_space=75,
+    clip_limit=2.0,
+    title_grid_size=(8, 8),
+) -> np.ndarray:
     if len(image.shape) > 2:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     # Normalize, bilateral filter, and CLAHE
     image = cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX)
-    image = cv2.bilateralFilter(image, 7, 50, 50)
-    image = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(image)
+    image = cv2.bilateralFilter(image, d=diameter, sigmaColor=sigma_color, sigmaSpace=sigma_space)
+    image = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=title_grid_size).apply(image)
 
     return image
 

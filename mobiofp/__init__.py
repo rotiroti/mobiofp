@@ -1,3 +1,4 @@
+from .background import BackgroundRemoval
 from .segmentation import DataGenerator, Segment
 from .utils import (
     contrast_score,
@@ -9,7 +10,6 @@ from .utils import (
     imkpts,
     orb_bf_matcher,
     orb_flann_matcher,
-    post_process_mask,
     quality_scores,
     sharpness_score,
 )
@@ -19,7 +19,7 @@ __all__ = (
     "__version__",
     "Segment",
     "DataGenerator",
-    "post_process_mask",
+    "BackgroundRemoval",
     "sharpness_score",
     "contrast_score",
     "coverage_percentage",

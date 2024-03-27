@@ -266,7 +266,7 @@ class Segment:
         """
         self.model.load_weights(path)
 
-    def predict(self, img, postprocess=True):
+    def predict(self, img):
         """
         Predicts the mask for an image using the U-Net model.
 
@@ -289,9 +289,7 @@ class Segment:
         input = np.expand_dims(input, axis=0)
         mask = (self.model.predict(input) > 0.5).astype(np.uint8).reshape(256, 256)
         mask = cv2.resize(mask, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_LINEAR)
-
-        if postprocess:
-            mask = self._postprocess(mask)
+        mask = self._postprocess(mask)
 
         return mask
 
@@ -360,3 +358,41 @@ class Segment:
             dict: A dictionary containing the evaluation metrics.
         """
         return self.model.evaluate(test_data, steps=len(test_data))
+
+    def extract_roi(self, mask: np.ndarray, factor: float = 1.0) -> tuple[int, int, int, int]:
+        """
+        Extract ROI from a binary mask.
+
+        Args:
+            mask: Binary mask.
+            factor: Factor to increase the size of the ROI.
+        Returns:
+            Tuple with four coordinates representing the bounding box rectangle.
+        """
+        contours, _ = cv2.findContours(
+            mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        )
+        contour = max(contours, key=cv2.contourArea)
+        x, y, w, h = cv2.boundingRect(contour)
+
+        # Adjust the size of the ROI by a factor
+        w_new = int(w * factor)
+        h_new = int(h * factor)
+        x_new = max(0, x - (w_new - w) // 2)
+        y_new = max(0, y - (h_new - h) // 2)
+
+        return (x_new, y_new, w_new, h_new)
+
+    def crop_image(self, image: np.ndarray, roi: tuple[int, int, int, int]) -> np.ndarray:
+        """
+        Crop an image or a mask using a bounding box.
+
+        Args:
+            image: Image to be cropped.
+            roi: Tuple with four coordinates representing the bounding box rectangle.
+        Returns:
+            Cropped image.
+        """
+        x, y, w, h = roi
+
+        return image[y : y + h, x : x + w]

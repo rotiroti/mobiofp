@@ -15,7 +15,6 @@ from mobiofp.utils import (
     fingerprint_mapping,
     fingertip_enhancement,
     fingertip_thresholding,
-    quality_scores,
 )
 
 app = typer.Typer()
@@ -142,55 +141,6 @@ def subtract(
         typer.echo(f"Fingertip mask saved to {mask_path}")
 
     typer.echo("Done!")
-
-
-@app.command(help="Generate a fingertip image quality assessment report.")
-def score(
-    source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
-    mask_directory: Path = typer.Argument(..., help="Path to the fingertip masks directory."),
-    target_directory: Path = typer.Argument(..., help="Path to the output directory."),
-    report_file: Path = typer.Option("quality_scores.csv", help="Path to the output report file."),
-):
-    # Create output directories
-    report_dir = Path(target_directory)
-    report_dir.mkdir(parents=True, exist_ok=True)
-    report_file_path = report_dir / report_file
-
-    # Open the CSV file
-    with open(report_file_path, "w", newline="") as csvfile:
-        fieldnames = ["Image name", "Sharpness", "Contrast", "Binary Mask Coverage"]
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-
-        # Write the header
-        writer.writeheader()
-
-        # Process each image in the directory
-        image_paths = list(Path(source_directory).glob("*.jpg"))
-        for image_path in tqdm(image_paths):
-            mask_path = Path(mask_directory) / image_path.with_suffix(".png").name
-
-            # Read the image and mask
-            image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
-            mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
-
-            # Compute quality scores
-            sharpness, contrast, coverage = quality_scores(image, mask)
-
-            typer.echo(
-                f"Image: {image_path.name}, Sharpness: {sharpness:.2f}, Contrast: {contrast:.2f}, Binary Mask Coverage: {coverage:.2f}"
-            )
-
-            # Write the data to the CSV file
-            writer.writerow(
-                {
-                    "Image name": image_path.name,
-                    "Sharpness": sharpness,
-                    "Contrast": contrast,
-                    "Binary Mask Coverage": coverage,
-                }
-            )
-
-    typer.echo(f"Quality scores saved to {report_file_path}")
 
 
 @app.command(help="Run fingertip enhancement (bilateral filter and CLAHE).")

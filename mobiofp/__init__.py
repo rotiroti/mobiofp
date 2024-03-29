@@ -1,8 +1,14 @@
 from .background import BackgroundRemoval
+from .iqa import (
+    canny_sharpness,
+    edge_density,
+    estimate_noise,
+    gradient_magnitude,
+    laplacian_sharpness,
+    rms_contrast,
+)
 from .segmentation import DataGenerator, Segment
 from .utils import (
-    contrast_score,
-    coverage_percentage,
     fingerprint_enhancement,
     fingerprint_mapping,
     fingertip_enhancement,
@@ -10,8 +16,6 @@ from .utils import (
     imkpts,
     orb_bf_matcher,
     orb_flann_matcher,
-    quality_scores,
-    sharpness_score,
 )
 
 __version__ = "0.1.0"
@@ -20,10 +24,12 @@ __all__ = (
     "Segment",
     "DataGenerator",
     "BackgroundRemoval",
-    "sharpness_score",
-    "contrast_score",
-    "coverage_percentage",
-    "quality_scores",
+    "estimate_noise",
+    "rms_contrast",
+    "canny_sharpness",
+    "edge_density",
+    "laplacian_sharpness",
+    "gradient_magnitude",
     "fingertip_enhancement",
     "fingerprint_mapping",
     "fingerprint_enhancement",

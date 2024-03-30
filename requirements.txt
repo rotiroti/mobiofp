@@ -8,3 +8,4 @@ rembg
 tensorflow
 typer
 ultralytics
+PyWavelets

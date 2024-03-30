@@ -11,8 +11,6 @@ from ultralytics import YOLO, settings
 from mobiofp.background import BackgroundRemoval
 from mobiofp.segmentation import Segment
 from mobiofp.utils import (
-    fingerprint_enhancement,
-    fingerprint_mapping,
     fingertip_enhancement,
     fingertip_thresholding,
 )
@@ -192,7 +190,7 @@ def binarize(
     binarized_dir = Path(target_directory) / "binarized"
     binarized_dir.mkdir(parents=True, exist_ok=True)
 
-    for image_path in tqdm(list(Path(source_directory).glob("*.jpg"))):
+    for image_path in tqdm(list(Path(source_directory).glob("*.png"))):
         image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
         binarized = fingertip_thresholding(image, block_size)
 
@@ -200,26 +198,5 @@ def binarize(
         binarized_path = binarized_dir / image_path.with_suffix(".png").name
         cv2.imwrite(str(binarized_path), binarized)
         typer.echo(f"Binarized fingertip image saved to {binarized_path}")
-
-    typer.echo("Done!")
-
-
-@app.command(help="Transform fingertip images into fingerprint images.")
-def convert(
-    source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
-    target_directory: Path = typer.Argument(..., help="Path to the output directory."),
-):
-    fingerprint_dir = Path(target_directory) / "mapping"
-    fingerprint_dir.mkdir(parents=True, exist_ok=True)
-
-    for image_path in tqdm(list(Path(source_directory).glob("*.png"))):
-        fingertip = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
-        fingerprint = fingerprint_mapping(fingertip)
-        fingerprint = fingerprint_enhancement(fingerprint)
-
-        # Save enhanced fingerprint
-        fingerprint_path = fingerprint_dir / image_path.with_suffix(".png").name
-        cv2.imwrite(str(fingerprint_path), fingerprint)
-        typer.echo(f"Contactless to contact mapping saved to {fingerprint_path}")
 
     typer.echo("Done!")

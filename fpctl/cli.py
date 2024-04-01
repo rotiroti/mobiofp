@@ -1,6 +1,6 @@
 import typer
 
-from . import dataset, feature, fingertip, quality, fingerprint
+from . import dataset, feature, fingerprint, fingertip, quality
 
 app = typer.Typer(help="Fingerphoto Recognition Command Line Interface.")
 app.add_typer(fingertip.app, name="fingertip", help="Fingertip Commands")

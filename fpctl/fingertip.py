@@ -10,10 +10,7 @@ from ultralytics import YOLO, settings
 
 from mobiofp.background import BackgroundRemoval
 from mobiofp.segmentation import Segment
-from mobiofp.utils import (
-    fingertip_enhancement,
-    fingertip_thresholding,
-)
+from mobiofp.utils import fingertip_enhancement, fingertip_thresholding
 
 app = typer.Typer()
 
@@ -119,24 +116,20 @@ def subtract(
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
     rembg_model: str = typer.Option("u2net", help="Rembg model to use"),
 ):
-    # Create output directories
-    masks_dir = Path(target_directory) / "masks"
-    masks_dir.mkdir(parents=True, exist_ok=True)
+    output_dir = Path(target_directory) / "masks"
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     remover = BackgroundRemoval(session=rembg_model)
 
-    for image_path in tqdm(list(Path(source_directory).glob("*.jpg"))):
-        # Read RGB sample image
-        image = cv2.imread(str(image_path))
+    for p in tqdm(list(Path(source_directory).glob("*.jpg"))):
+        image = cv2.imread(str(p))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         # Apply background removal
-        mask = remover.apply(image)
-
-        # Save fingertip mask
-        mask_path = masks_dir / image_path.with_suffix(".png").name
-        cv2.imwrite(str(mask_path), mask)
-        typer.echo(f"Fingertip mask saved to {mask_path}")
+        output = remover.apply(image)
+        output_path = output_dir / p.with_suffix(".png").name
+        cv2.imwrite(str(output_path), output)
+        typer.echo(f"Fingertip mask saved to {output_path}")
 
     typer.echo("Done!")
 
@@ -144,7 +137,6 @@ def subtract(
 @app.command(help="Run fingertip enhancement (bilateral filter and CLAHE).")
 def enhance(
     source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
-    mask_directory: Path = typer.Argument(..., help="Path to the fingertip masks directory."),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
     diameter: int = typer.Option(
         10, help="Diameter of each pixel neighborhood that is used during filtering."
@@ -156,27 +148,18 @@ def enhance(
         (8, 8), help="Size of grid for histogram equalization."
     ),
 ):
-    # Create output directories
-    images_dir = Path(target_directory) / "enhancement"
-    images_dir.mkdir(parents=True, exist_ok=True)
+    output_dir = Path(target_directory) / "enhancement"
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    image_paths = list(Path(source_directory).glob("*.jpg"))
-    for image_path in tqdm(image_paths):
-        mask_path = Path(mask_directory) / image_path.with_suffix(".png").name
-
-        # Read fingertip and mask images (Grayscale)
-        image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
-        mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
-
-        fingertip = fingertip_enhancement(
+    for p in tqdm(list(Path(source_directory).glob("*.jpg"))):
+        image = cv2.imread(str(p), cv2.IMREAD_GRAYSCALE)
+        output = fingertip_enhancement(
             image, diameter, sigma_color, sigma_space, clip_limit, tile_grid_size
         )
 
-        # Save enhanced fingertip without background
-        fingertip = cv2.bitwise_and(fingertip, fingertip, mask=mask)
-        fingertip_path = images_dir / image_path.with_suffix(".png").name
-        cv2.imwrite(str(fingertip_path), fingertip)
-        typer.echo(f"Enhanced fingertip image saved to {fingertip_path}")
+        output_path = output_dir / p.with_suffix(".png").name
+        cv2.imwrite(str(output_path), output)
+        typer.echo(f"Enhanced fingertip image saved to {output_path}")
 
     typer.echo("Done!")
 
@@ -184,19 +167,21 @@ def enhance(
 @app.command(help="Run mean adaptive thresholding.")
 def binarize(
     source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
+    mask_directory: Path = typer.Argument(..., help="Path to the fingertip masks directory."),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
     block_size: int = typer.Option(11, help="Block size."),
 ):
-    binarized_dir = Path(target_directory) / "binarized"
-    binarized_dir.mkdir(parents=True, exist_ok=True)
+    output_dir = Path(target_directory) / "binarized"
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    for image_path in tqdm(list(Path(source_directory).glob("*.png"))):
-        image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
-        binarized = fingertip_thresholding(image, block_size)
-
-        # Save binarized fingertip
-        binarized_path = binarized_dir / image_path.with_suffix(".png").name
-        cv2.imwrite(str(binarized_path), binarized)
-        typer.echo(f"Binarized fingertip image saved to {binarized_path}")
+    for p in tqdm(list(Path(source_directory).glob("*.png"))):
+        image = cv2.imread(str(p), cv2.IMREAD_GRAYSCALE)
+        mask_path = mask_directory / p.name
+        mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
+        output = cv2.bitwise_and(image, image, mask=mask)
+        output = fingertip_thresholding(output, block_size)
+        output_path = output_dir / p.name
+        cv2.imwrite(str(output_path), output)
+        typer.echo(f"Binarized fingertip image saved to {output_path}")
 
     typer.echo("Done!")

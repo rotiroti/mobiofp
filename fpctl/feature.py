@@ -15,28 +15,20 @@ app = typer.Typer()
 def extract(
     mapping_directory: Path = typer.Argument(..., help="Path to the input mapping directory."),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
-    thinning: bool = typer.Option(False, help="Whether to thin the fingerprint image."),
     features: int = typer.Option(500, help="Maximum number of features to retain."),
     rich_keypoints: bool = typer.Option(False, help="Whether to draw rich keypoints."),
 ):
-    # Create output directory
-    features_dir = Path(target_directory) / "features"
-    features_dir.mkdir(parents=True, exist_ok=True)
+    output_dir = Path(target_directory) / "features"
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # Initialize the ORB detector
     orb = cv2.ORB_create(nfeatures=features)
 
-    # Process each image in the directory
     for image_path in tqdm(list(Path(mapping_directory).glob("*.png"))):
         image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
 
-        # Apply thinning if necessary
-        if thinning:
-            image = cv2.ximgproc.thinning(image)
-
         # Find the keypoints and descriptors
         keypoints, descriptors = orb.detectAndCompute(image, None)
-
         flags = cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS
         if rich_keypoints:
             flags = cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS
@@ -51,7 +43,7 @@ def extract(
         ]
 
         # Save keypoints and descriptors
-        features_path = features_dir / image_path.with_suffix(".pickle").name
+        features_path = output_dir / image_path.with_suffix(".pickle").name
 
         with open(features_path, "wb") as f:
             pickle.dump((keypoints_list, descriptors), f)
@@ -59,7 +51,7 @@ def extract(
         typer.echo(f"Saved features to {features_path}")
 
         # Save keypoints image
-        keypoints_image_path = features_dir / image_path.with_suffix(".png").name
+        keypoints_image_path = output_dir / image_path.with_suffix(".png").name
         cv2.imwrite(str(keypoints_image_path), keypoints_image)
         typer.echo(f"Saved keypoints image to {keypoints_image_path}")
 

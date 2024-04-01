@@ -1,11 +1,13 @@
+from pathlib import Path
+
 import cv2
 import typer
-
-from pathlib import Path
 from tqdm import tqdm
-from mobiofp.utils import fingerprint_mapping, fingerprint_enhancement
+
+from mobiofp.utils import fingerprint_enhancement, fingerprint_mapping
 
 app = typer.Typer()
+
 
 @app.command(help="Transform fingertip images into fingerprint images.")
 def convert(
@@ -23,6 +25,7 @@ def convert(
         typer.echo(f"Fingerprint enhanced image saved to {output_path}")
     typer.echo("Done!")
 
+
 @app.command(help="Run fingerprint enhancement")
 def enhance(
     source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
@@ -37,7 +40,8 @@ def enhance(
         output_path = output_dir / p.with_suffix(".png").name
         cv2.imwrite(str(output_path), output)
         typer.echo(f"Fingerprint enhanced image saved to {output_path}")
-    typer.echo("Done!")    
+    typer.echo("Done!")
+
 
 @app.command(help="Apply thinning algorithm to fingerprint images.")
 def thinning(

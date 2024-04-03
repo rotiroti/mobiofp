@@ -52,7 +52,7 @@ def segment(
         fingertip_mask = fingertip_mask * 255
 
         # Save fingertip, mask and bbox
-        fingertip_path = images_dir / image_path.name
+        fingertip_path = images_dir / image_path.with_suffix(".png").name
         cv2.imwrite(str(fingertip_path), fingertip)
         typer.echo(f"Fingertip image saved to {fingertip_path}")
 
@@ -97,7 +97,7 @@ def detect(
     # Move cropped images and labels to the output directory
     for file in Path(results_images_dir).glob("*.jpg"):
         typer.echo(f"Moving {file} to {images_dir}")
-        shutil.move(str(file), str(images_dir / file.name))
+        shutil.move(str(file), str(images_dir / file.with_suffix(".png").name))
 
     for file in Path(results_labels_dir).glob("*.txt"):
         typer.echo(f"Moving {file} to {labels_dir}")
@@ -121,7 +121,7 @@ def subtract(
 
     remover = BackgroundRemoval(session=rembg_model)
 
-    for p in tqdm(list(Path(source_directory).glob("*.jpg"))):
+    for p in tqdm(list(Path(source_directory).glob("*.png"))):
         image = cv2.imread(str(p))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
@@ -139,10 +139,10 @@ def enhance(
     source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
     diameter: int = typer.Option(
-        10, help="Diameter of each pixel neighborhood that is used during filtering."
+        7, help="Diameter of each pixel neighborhood that is used during filtering."
     ),
-    sigma_color: int = typer.Option(75, help="Filter sigma in the color space."),
-    sigma_space: int = typer.Option(75, help="Filter sigma in the coordinate space."),
+    sigma_color: int = typer.Option(100, help="Filter sigma in the color space."),
+    sigma_space: int = typer.Option(100, help="Filter sigma in the coordinate space."),
     clip_limit: float = typer.Option(2.0, help="Threshold for contrast limiting."),
     tile_grid_size: tuple[int, int] = typer.Option(
         (8, 8), help="Size of grid for histogram equalization."
@@ -151,7 +151,7 @@ def enhance(
     output_dir = Path(target_directory) / "enhancement"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    for p in tqdm(list(Path(source_directory).glob("*.jpg"))):
+    for p in tqdm(list(Path(source_directory).glob("*.png"))):
         image = cv2.imread(str(p), cv2.IMREAD_GRAYSCALE)
         output = fingertip_enhancement(
             image, diameter, sigma_color, sigma_space, clip_limit, tile_grid_size
@@ -169,7 +169,7 @@ def binarize(
     source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
     mask_directory: Path = typer.Argument(..., help="Path to the fingertip masks directory."),
     target_directory: Path = typer.Argument(..., help="Path to the output directory."),
-    block_size: int = typer.Option(11, help="Block size."),
+    block_size: int = typer.Option(19, help="Block size."),
 ):
     output_dir = Path(target_directory) / "binarized"
     output_dir.mkdir(parents=True, exist_ok=True)

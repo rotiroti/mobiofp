@@ -2,6 +2,7 @@
 
 import argparse
 from pathlib import Path
+from tqdm import tqdm
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,7 +12,7 @@ import seaborn as sns
 def create_matrix(input_dir):
     M = {}
 
-    for file in list(input_dir.glob("*.npz")):
+    for file in tqdm(list(input_dir.glob("*.npz"))):
         filename = file.stem
         p_subj, p_ill, p_fin, p_back, p_imp, g_subj, g_ill, g_fin, g_back, g_imp, _ = (
             filename.split("_")
@@ -28,7 +29,7 @@ def create_matrix(input_dir):
     return M
 
 
-def all_vs_all_single_instance(M, thresholds):
+def all_against_all_single_instance(M, thresholds):
     results = []
 
     for t in thresholds:
@@ -66,7 +67,7 @@ def all_vs_all_single_instance(M, thresholds):
     return results
 
 
-def compute_best_matches(M):
+def compute_best_matches(M, operator=max):
     matrix_of_best = {}
 
     for row, columns in M.items():
@@ -82,13 +83,12 @@ def compute_best_matches(M):
                 results_per_group[current_subject] = [value]
 
         for subject, results in results_per_group.items():
-            matrix_of_best[row][subject] = max(results)
-            # matrix_of_best[row][subject] = np.mean(results)
+            matrix_of_best[row][subject] = operator(results)
 
     return matrix_of_best
 
 
-def probe_vs_all_multiple_instance(best_matches, thresholds):
+def probe_vs_gallery_multiple_instance(best_matches, thresholds):
     results = []
 
     for t in thresholds:
@@ -127,8 +127,8 @@ def probe_vs_all_multiple_instance(best_matches, thresholds):
     return results
 
 
-def plot_metrics(results):
-    thresholds, GAR, FAR, FRR, _ = zip(*results)
+def plot_metrics(results, title="Evaluation Metrics"):
+    thresholds, _, FAR, FRR, _ = zip(*results)
     FAR = np.array(FAR)
     FRR = np.array(FRR)
     diff = np.abs(FAR - FRR)
@@ -138,11 +138,14 @@ def plot_metrics(results):
     eer_threshold = thresholds[eer_index]
     eer = (FAR[eer_index] + FRR[eer_index]) / 2
 
+    print(title)
     print(f"Equal Error Rate (EER): {eer:.2f}")
+    print(f"Equal Error Rate (EER) Threshold: {eer_threshold:.2f}")
 
     ONE_MINUS_FRR_sorted = 1 - FRR
 
     _, axes = plt.subplots(1, 3, figsize=(15, 5), constrained_layout=True)
+    plt.suptitle(title)
 
     # Plot FAR, FRR and ERR
     sns.lineplot(x=thresholds, y=FAR, color="blue", label="FAR", ax=axes[0])
@@ -181,14 +184,14 @@ if __name__ == "__main__":
     max_similarity = max(max(gallery_dict.values()) for gallery_dict in M.values())
     thresholds = np.arange(min_similarity, max_similarity, 1)
 
-    print(f"Min similarity: {min_similarity}")
-    print(f"Max similarity: {max_similarity}")
+    print(f"Minimum similarity threshold: {min_similarity}")
+    print(f"Maximum similarity threshold: {max_similarity}")
 
-    # Run ALL-AGAINST-ALL (single template per subject)
-    results = all_vs_all_single_instance(M, thresholds)
-    plot_metrics(results)
+    # Run All Against All (single template per subject)
+    results = all_against_all_single_instance(M, thresholds)
+    plot_metrics(results, "All-Against-All (single)")
 
-    # Run PROBE-AGAINST-ALL (multiple templates per subject)
+    # Run Probe vs Gallery (multiple templates per subject)
     best_matches = compute_best_matches(M)
-    results = probe_vs_all_multiple_instance(best_matches, thresholds)
-    plot_metrics(results)
+    results = probe_vs_gallery_multiple_instance(best_matches, thresholds)
+    plot_metrics(results, "Probe-vs-Gallery (multiple)")

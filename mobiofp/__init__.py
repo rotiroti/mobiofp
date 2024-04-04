@@ -13,9 +13,6 @@ from .utils import (
     fingerprint_mapping,
     fingertip_enhancement,
     fingertip_thresholding,
-    imkpts,
-    orb_bf_matcher,
-    orb_flann_matcher,
 )
 
 __version__ = "0.1.0"
@@ -34,7 +31,4 @@ __all__ = (
     "fingerprint_mapping",
     "fingerprint_enhancement",
     "fingertip_thresholding",
-    "imkpts",
-    "orb_bf_matcher",
-    "orb_flann_matcher",
 )

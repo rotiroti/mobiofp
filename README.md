@@ -218,23 +218,6 @@ Threshold: 75.0; Image: data/processed/detection/fingertips/9_o_2_n_1.jpg, Binar
 Done!
 ```
 
-### Feature Commands
-
-```
-$ fpctl feature --help
-
-Usage: fpctl feature [OPTIONS] COMMAND [ARGS]...
-
-  Feature Commands
-
-Options:
-  --help  Show this message and exit.
-
-Commands:
-  extract  Run fingerprint feature extraction using ORB.
-  info     Show information about the features.
-```
-
 ## TODO
 
 - Unit Testing / Linting

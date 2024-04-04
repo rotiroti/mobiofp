@@ -34,7 +34,7 @@ def report(
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
 
-        for image_path in tqdm(list(Path(source_directory).glob("*.jpg"))):
+        for image_path in tqdm(list(Path(source_directory).glob("*.png"))):
             image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
             laplacian = laplacian_sharpness(image)
             noise = estimate_noise(image)

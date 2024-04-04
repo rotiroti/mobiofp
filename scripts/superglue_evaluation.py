@@ -23,9 +23,6 @@ def create_matrix(input_dir):
 
         if probe_template not in M:
             M[probe_template] = {}
-        if gallery_template not in M[probe_template]:
-            M[probe_template][gallery_template] = 0
-
         M[probe_template][gallery_template] = similarity
 
     return M
@@ -45,7 +42,6 @@ def all_vs_all_single_instance(M, thresholds):
                 p_id = probe_template.split("_")[0]
                 g_id = gallery_template.split("_")[0]
 
-                # if probe_template != gallery_template:  # Exclude self-matching
                 if similarity >= t:
                     if p_id == g_id:  # Genuine pair
                         GA += 1
@@ -70,29 +66,29 @@ def all_vs_all_single_instance(M, thresholds):
     return results
 
 
-def compute_max_subgroups(M):
-    genuine_best = {}
-    impostor_best = {}
+def compute_best_matches(M):
+    matrix_of_best = {}
 
-    for probe_template, gallery_dict in M.items():
-        p_id = probe_template.split("_")[0]
+    for row, columns in M.items():
+        results_per_group = {}
+        matrix_of_best[row] = {}
 
-        for gallery_template, similarity in gallery_dict.items():
-            g_id = gallery_template.split("_")[0]
+        for column, value in columns.items():
+            current_subject = column.split("_")[0]
 
-            # if probe_template != gallery_template:
-            if p_id == g_id:
-                if p_id not in genuine_best or similarity > genuine_best[p_id]:
-                    genuine_best[p_id] = similarity
+            if current_subject in results_per_group:
+                results_per_group[current_subject].append(value)
             else:
-                pair_id = f"{p_id}_{g_id}"
-                if pair_id not in impostor_best or similarity > impostor_best[pair_id]:
-                    impostor_best[pair_id] = similarity
+                results_per_group[current_subject] = [value]
 
-    return genuine_best, impostor_best
+        for subject, results in results_per_group.items():
+            matrix_of_best[row][subject] = max(results)
+            # matrix_of_best[row][subject] = np.mean(results)
+
+    return matrix_of_best
 
 
-def all_vs_all_multiple_instance(M, genuine_best, impostor_best, thresholds):
+def probe_vs_all_multiple_instance(best_matches, thresholds):
     results = []
 
     for t in thresholds:
@@ -101,23 +97,16 @@ def all_vs_all_multiple_instance(M, genuine_best, impostor_best, thresholds):
         FR = 0  # False Rejections
         GR = 0  # Genuine Rejections
 
-        for probe_template, gallery_dict in M.items():
-            p_id = probe_template.split("_")[0]
-
-            for gallery_template in gallery_dict.keys():
-                g_id = gallery_template.split("_")[0]
-
-                # if probe_template != gallery_template:  # Exclude self-matching
-                if p_id == g_id:  # Genuine pair
-                    similarity = genuine_best[p_id]
-                else:  # Impostor pair
-                    pair_id = f"{p_id}_{g_id}"
-                    similarity = impostor_best[pair_id]
+        for p_template in best_matches.keys():
+            p_id = p_template.split("_")[0]
+            for g_template in best_matches[p_template].keys():
+                g_id = g_template.split("_")[0]
+                similarity = best_matches[p_template][g_template]
 
                 if similarity >= t:
-                    if p_id == g_id:  # Genuine pair
+                    if p_id == g_id:
                         GA += 1
-                    else:  # Impostor pair
+                    else:
                         FA += 1
                 else:
                     if p_id == g_id:
@@ -187,19 +176,19 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("input_dir", type=Path, help="The file to evaluate")
     args = parser.parse_args()
-
-    # Create the similarity matrix
     M = create_matrix(args.input_dir)
-
-    # Calculate the minimum and maximum similarity scores in your dataset
     min_similarity = min(min(gallery_dict.values()) for gallery_dict in M.values())
     max_similarity = max(max(gallery_dict.values()) for gallery_dict in M.values())
-    thresholds = np.linspace(min_similarity, max_similarity, num=100)
+    thresholds = np.arange(min_similarity, max_similarity, 1)
+
     print(f"Min similarity: {min_similarity}")
     print(f"Max similarity: {max_similarity}")
 
     # Run ALL-AGAINST-ALL (single template per subject)
     results = all_vs_all_single_instance(M, thresholds)
+    plot_metrics(results)
 
-    # Plot metrics
+    # Run PROBE-AGAINST-ALL (multiple templates per subject)
+    best_matches = compute_best_matches(M)
+    results = probe_vs_all_multiple_instance(best_matches, thresholds)
     plot_metrics(results)

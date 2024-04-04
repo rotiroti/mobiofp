@@ -84,7 +84,7 @@ def detect(
     model = YOLO(str(model_file))
 
     # Run inference on all images in the source directory
-    results = model(source_directory, stream=True, max_det=1, save_txt=True, save_crop=True)
+    results = model(source_directory, stream=True, save_txt=True, save_crop=True)
 
     # Consume generator to process all images
     for _ in results:
@@ -96,8 +96,9 @@ def detect(
 
     # Move cropped images and labels to the output directory
     for file in Path(results_images_dir).glob("*.jpg"):
-        typer.echo(f"Moving {file} to {images_dir}")
-        shutil.move(str(file), str(images_dir / file.with_suffix(".png").name))
+        fingertip_path = images_dir / file.with_suffix(".png").name
+        typer.echo(f"Moving {file} to {fingertip_path}")
+        shutil.move(str(file), str(fingertip_path))
 
     for file in Path(results_labels_dir).glob("*.txt"):
         typer.echo(f"Moving {file} to {labels_dir}")

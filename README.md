@@ -46,22 +46,22 @@ $ pip install tensorflow-metal
 ```
 $ fpctl --help
 
-Usage: fpctl [OPTIONS] COMMAND [ARGS]...
+Usage: fpctl [OPTIONS] COMMAND [ARGS]...                                                                                                                                                            
+                                                                                                                                                                                                     
+ Fingerphoto Recognition Command Line Interface.                                                                                                                                                     
+                                                                                                                                                                                                     
+╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --install-completion          Install completion for the current shell.                                                                                                                           │
+│ --show-completion             Show completion for the current shell, to copy it or customize the installation.                                                                                    │
+│ --help                        Show this message and exit.                                                                                                                                         │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ dataset                                                             Dataset Commands                                                                                                              │
+│ fingerprint                                                         Fingerprint Commands                                                                                                          │
+│ fingertip                                                           Fingertip Commands                                                                                                            │
+│ quality                                                             Image Quality Commands                                                                                                        │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-  Fingerphoto Recognition Command Line Interface.
-
-Options:
-  --install-completion [bash|zsh|fish|powershell|pwsh]
-                                  Install completion for the specified shell.
-  --show-completion [bash|zsh|fish|powershell|pwsh]
-                                  Show completion for the specified shell, to
-                                  copy it or customize the installation.
-  --help                          Show this message and exit.
-
-Commands:
-  dataset    Dataset Commands
-  feature    Feature Commands
-  fingertip  Fingertip Commands
 ```
 
 
@@ -82,7 +82,7 @@ Commands:
 | Fingertip Training Process (Semantic Segmentation) | fingertip297seg.zip  | [00_rl_semantic_segmentation_training.ipynb](./notebooks/00_rl_semantic_segmentation_training.ipynb) |
 | Fingerphoto Recognition (with Fingertip Object Detection)  | fingertip-obj-[amd64\|arm64].pt  | [01_rl_fingerphoto_recognition_obj.ipynb](./notebooks/01_rl_fingerphoto_recognition_obj.ipynb)|
 | Fingerphoto Recognition (with Fingertip Semantic Segmentation) | fingertip-seg-[amd64\|arm64].h5 | [01_rl_fingerphoto_recognition_seg.ipynb](./notebooks/01_rl_fingerphoto_recognition_seg.ipynb)|
-| Fingertip Image Quality Assessment  | fingertips (images, masks), quality_scores.csv (*) | [02_rl_fingertip_image_quality_assessment.ipynb](./notebooks/02_rl_fingertip_image_quality_assessment.ipynb) |
+| Fingertip Image Quality Assessment  | fingertips (images, masks), iqa.csv (*) | [02_rl_iqa_fingertip_enhancement.ipynb](./notebooks/02_rl_iqa_fingertip_enhancement.ipynb) |
 
 (*) Refer to the "Fingerphoto Control CLI Application (fpctl)" section in this document for details on how to generate the Image Quality Score CSV file.
 
@@ -101,121 +101,81 @@ Commands:
 
 ```
 $ fpctl dataset --help
-
-Usage: fpctl dataset [OPTIONS] COMMAND [ARGS]...
-
-  Dataset Commands
-
-Options:
-  --help  Show this message and exit.
-
-Commands:
-  create  Create dataset for YOLO object detection.
-  gray    Convert dataset images to grayscale.
-  resize  Resize dataset images to a given width.
-  rotate  Rotate dataset images by a given angle (in degrees).
-```
-
-#### Convert dataset images to grayscale.
+                                                                                                                                                                                                     
+ Usage: fpctl dataset [OPTIONS] COMMAND [ARGS]...                                                                                                                                                    
+                                                                                                                                                                                                     
+ Dataset Commands                                                                                                                                                                                    
+                                                                                                                                                                                                     
+╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                                                                                                                                       │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ create                  Create dataset for YOLO object detection.                                                                                                                                 │
+│ gray                    Convert dataset images to grayscale.                                                                                                                                      │
+│ resize                  Resize dataset images to a given width.                                                                                                                                   │
+│ rotate                  Rotate dataset images by a given angle (in degrees).                                                                                                                      │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ```
-$ fpctl dataset gray ./data/raw/samples ./data/processed/samplesGray
-```
-
-#### Resize dataset images to 640 pixels
-
-```
-$ fpctl dataset resize --width=640 ./data/raw/samples ./data/processed/samples640w
-```
-
-#### Rotate dataset images by an angle of 90 degrees (clockwise)
-```
-$ fpctl dataset rotate --angle=90 ./data/raw/samples ./data/processed/samples90d
-```
-
 
 ### Fingertip Commands
 
 ```
 $ fpctl fingertip --help
 
-Usage: fpctl fingertip [OPTIONS] COMMAND [ARGS]...
-
-  Fingertip Commands
-
-Options:
-  --help  Show this message and exit.
-
-Commands:
-  binarize  Run mean adaptive thresholding.
-  convert   Transform fingertip images into fingerprint images.
-  detect    Run fingertip detection using a custom YOLOv8n model.
-  enhance   Run fingertip enhancement (bilateral filter and CLAHE).
-  score     Generate a fingertip image quality assessment report.
-  segment   Run fingertip segmentation using a custom U-Net model.
-  subtract  Generate binary mask through background subtraction.
-```
-
-#### Generate fingertip images, masks, and bounding box annotations using the custom-trained semantic segmentation model.
+                                                                                                                                                                                                    
+ Fingertip Commands                                                                                                                                                                                  
+                                                                                                                                                                                                     
+╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                                                                                                                                       │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ binarize                    Run mean adaptive thresholding.                                                                                                                                       │
+│ detect                      Run fingertip detection using a custom YOLOv8n model.                                                                                                                 │
+│ enhance                     Run fingertip enhancement (bilateral filter and CLAHE).                                                                                                               │
+│ segment                     Run fingertip segmentation using a custom U-Net model.                                                                                                                │
+│ subtract                    Generate binary mask through background subtraction.                                                                                                                  │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ```
-$ fpctl fingertip segment ./data/raw/samples ./models/fingertip-seg-[amd64\|arm64].h5 ./data/processed/segmentation
-...
-...
-Fingertip image saved to data/processed/segmentation/fingertips/1_i_2_w_1.jpg
-Fingertip mask saved to data/processed/segmentation/masks/1_i_2_w_1.png
-Fingertip bbox saved to data/processed/segmentation/bbox/1_i_2_w_1.txt
-100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 8/8 [00:05<00:00,  1.37it/s]
-Done!
-```
 
-#### Generate fingertip images, masks, and bounding box annotations using the custom-trained object detection model.
+### Fingerprint Commands
 
 ```
-$ fpctl fingertip detect ./data/raw/samples ./models/fingertip-obj-[amd64\|arm64].pt ./data/processed/detection
-...
-...
-Speed: 1.9ms preprocess, 41.2ms inference, 0.4ms postprocess per image at shape (1, 3, 480, 640)
-Results saved to runs/detect/predict
-8 labels saved to runs/detect/predict/labels
-Moving runs/detect/predict/crops/Fingertip/9_i_1_w_1.jpg to data/processed/detection/fingertips
-...
-...
-Moving runs/detect/predict/labels/9_i_1_w_1.txt to data/processed/detection/bbox
-...
-...
-Cleaning up runs
-Done!
+$ fpctl fingerprint --help
+
+                                                                                                                                                                                                     
+ Usage: fpctl fingerprint [OPTIONS] COMMAND [ARGS]...                                                                                                                                                
+                                                                                                                                                                                                     
+ Fingerprint Commands                                                                                                                                                                                
+                                                                                                                                                                                                     
+╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                                                                                                                                       │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ convert                       Transform fingertip images into fingerprint images.                                                                                                                 │
+│ enhance                       Run fingerprint enhancement                                                                                                                                         │
+│ thinning                      Apply thinning algorithm to fingerprint images.                                                                                                                     │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
-```
-$ fpctl fingertip subtract ./data/processed/detection/fingertips ./data/processed/detection
-...
-...
-Fingertip mask saved to data/processed/detection/masks/9_i_1_w_1.png
-100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 8/8 [00:02<00:00,  2.88it/s]
-Done!
-```
-
-#### Perform figertip enhancement (with default binary mask coverage threshold = 65%)
+### Quality Commands
 
 ```
-$ fpctl fingertip enhance ./data/processed/detection/fingertips ./data/processed/detection/masks ./data/processed/detection
-...
-Threshold: 65.0; Image: data/processed/detection/fingertips/9_i_1_w_1.jpg, Binary Mask Coverage: 74.34
-100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 8/8 [00:02<00:00,  2.88it/s]
-Done!
-```
+$ fpctl quality --help
 
-#### Perform figertip enhancement (by setting a different binary mask coverage threshold = 75%)
-
-```
-$ fpctl fingertip enhance --area=75 ./data/processed/detection/fingertips ./data/processed/detection/masks ./data/processed/detection
-...
-Skipping data/processed/detection/fingertips/9_i_1_w_1.jpg due to low (74.34) coverage percentage.
-Threshold: 75.0; Image: data/processed/detection/fingertips/9_o_2_n_1.jpg, Binary Mask Coverage: 78.14
-100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 8/8 [00:02<00:00,  2.88it/s]
-Done!
+                                                                                                                                                                                                     
+ Usage: fpctl quality [OPTIONS] COMMAND [ARGS]...                                                                                                                                                    
+                                                                                                                                                                                                     
+ Image Quality Commands                                                                                                                                                                              
+                                                                                                                                                                                                     
+╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                                                                                                                                       │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ gradient                            Compute the gradient magnitude of images.                                                                                                                     │
+│ report                              Generate image quality assessment report.                                                                                                                     │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ## TODO

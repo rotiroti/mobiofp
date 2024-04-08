@@ -29,7 +29,7 @@ def create_matrix(input_dir):
     return M
 
 
-def all_against_all_single_instance(M, thresholds):
+def probe_vs_gallery_single_instance(M, thresholds):
     results = []
 
     for t in thresholds:
@@ -138,9 +138,12 @@ def plot_metrics(results, title="Evaluation Metrics"):
     eer_threshold = thresholds[eer_index]
     eer = (FAR[eer_index] + FRR[eer_index]) / 2
 
+    print("=" * 40)
     print(title)
     print(f"Equal Error Rate (EER): {eer:.2f}")
-    print(f"Equal Error Rate (EER) Threshold: {eer_threshold:.2f}")
+    print(f"Best Threshold: {eer_threshold:.2f}")
+    print(f"Accuracy: {1 - eer:.2f}")
+    print("=" * 40)
 
     ONE_MINUS_FRR_sorted = 1 - FRR
 
@@ -178,20 +181,15 @@ def plot_metrics(results, title="Evaluation Metrics"):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("input_dir", type=Path, help="The file to evaluate")
+    parser.add_argument("--th_min", type=int, default=1, help="Minimum threshold")
+    parser.add_argument("--th_max", type=int, default=101, help="Maximum threshold")
     args = parser.parse_args()
     M = create_matrix(args.input_dir)
-    min_similarity = min(min(gallery_dict.values()) for gallery_dict in M.values())
-    max_similarity = max(max(gallery_dict.values()) for gallery_dict in M.values())
-    thresholds = np.arange(min_similarity, max_similarity, 1)
+    thresholds = np.arange(args.th_min, args.th_max, 5)
 
-    print(f"Minimum similarity threshold: {min_similarity}")
-    print(f"Maximum similarity threshold: {max_similarity}")
+    single_res = probe_vs_gallery_single_instance(M, thresholds)
+    plot_metrics(single_res, "Single Instance Evaluation")
 
-    # Run All Against All (single template per subject)
-    results = all_against_all_single_instance(M, thresholds)
-    plot_metrics(results, "All-Against-All (single)")
-
-    # Run Probe vs Gallery (multiple templates per subject)
     best_matches = compute_best_matches(M)
     results = probe_vs_gallery_multiple_instance(best_matches, thresholds)
-    plot_metrics(results, "Probe-vs-Gallery (multiple)")
+    plot_metrics(results, "Multiple Instance Evaluation")

@@ -7,7 +7,7 @@ import numpy as np
 import typer
 from tqdm import tqdm
 
-from mobiofp.iqa import estimate_noise, laplacian_sharpness, rms_contrast
+from mobiofp.iqa import estimate_noise, laplacian_sharpness, rms_contrast, gradient_magnitude
 
 app = typer.Typer()
 
@@ -52,3 +52,21 @@ def report(
 
     typer.echo(f"Image quality assessment report saved to {report_file_path}")
     typer.echo("Done.")
+
+
+@app.command(help="Compute the gradient magnitude of images.")
+def gradient(
+    source_directory: Path = typer.Argument(..., help="Path to the input images directory."),
+    target_directory: Path = typer.Argument(..., help="Path to the output directory."),
+):
+    output_dir = Path(target_directory)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    for p in tqdm(list(Path(source_directory).glob("*.png"))):
+        image = cv2.imread(str(p), cv2.IMREAD_GRAYSCALE)
+        output = gradient_magnitude(image)
+        output_path = output_dir / p.with_suffix(".png").name
+        cv2.imwrite(str(output_path), output)
+        typer.echo(f"Gradient magnitude image saved to {output_path}")
+
+    typer.echo("Done!")

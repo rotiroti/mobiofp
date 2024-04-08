@@ -178,6 +178,11 @@ $ fpctl quality --help
 ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
+## Feature Extraction/Matching
+
+Feature extraction and matching are conducted utilizing the SuperGluePretrainedNetwork repository, available at this [link](https://github.com/rotiroti/SuperGluePretrainedNetwork). For installation instructions, please consult the README.md file located in the SuperGluePretrainedNetwork submodule directory.
+
+
 ## TODO
 
 - Unit Testing / Linting

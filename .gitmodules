@@ -1,0 +1,3 @@
+[submodule "SuperGluePretrainedNetwork"]
+	path = SuperGluePretrainedNetwork
+	url = https://github.com/rotiroti/SuperGluePretrainedNetwork.git

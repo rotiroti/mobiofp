@@ -15,7 +15,7 @@ def process_images(source_directory: Path, target_directory: Path, operation, op
     images_dir = Path(target_directory)
     images_dir.mkdir(parents=True, exist_ok=True)
 
-    for image_path in tqdm(list(Path(source_directory).glob("*.jpg"))):
+    for image_path in tqdm(list(Path(source_directory).glob("*.png"))):
         image = cv2.imread(str(image_path))
 
         # Apply operation
